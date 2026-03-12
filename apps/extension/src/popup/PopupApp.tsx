@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, User, FileText, CheckCircle, RefreshCw } from 'lucide-react';
 
 export function PopupApp() {

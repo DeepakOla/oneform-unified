@@ -1,9 +1,9 @@
 import { Worker, Job } from 'bullmq';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { SyncJobPayload, CRM_RATE_LIMITS, SyncJobData } from '../services/syncQueue.service.js';
 // ============================================================
 
-const redisConnection = new Redis.default(process.env.REDIS_URL || 'redis://localhost:6379', {
+const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
   maxRetriesPerRequest: null,
 });
 

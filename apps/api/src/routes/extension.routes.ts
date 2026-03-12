@@ -3,15 +3,13 @@ import { Router, type Router as ExpressRouter } from 'express';
 export const extensionRouter: ExpressRouter = Router();
 
 // Mock /getPendingJobs
-extensionRouter.post('/getPendingJobs', (req, res) => {
-  console.log('[Extension API] getPendingJobs requested');
+extensionRouter.post('/getPendingJobs', (_req, res) => {
   // Return empty array to stop polling errors, or mock a job
   res.json({ jobs: [] });
 });
 
 // Mock /getAutofillPayload
-extensionRouter.post('/getAutofillPayload', (req, res) => {
-  console.log('[Extension API] getAutofillPayload requested');
+extensionRouter.post('/getAutofillPayload', (_req, res) => {
   res.json({
     payload: {
       profile: {
@@ -29,11 +27,11 @@ extensionRouter.post('/getAutofillPayload', (req, res) => {
 });
 
 // Mock /claimJob
-extensionRouter.post('/claimJob', (req, res) => {
+extensionRouter.post('/claimJob', (_req, res) => {
   res.json({ success: true });
 });
 
 // Mock /reportJobResult
-extensionRouter.post('/reportJobResult', (req, res) => {
+extensionRouter.post('/reportJobResult', (_req, res) => {
   res.json({ success: true });
 });
