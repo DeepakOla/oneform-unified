@@ -48,6 +48,18 @@ function LoadingFallback() {
   );
 }
 
+/** Placeholder for dashboard sections not yet built */
+function DashboardPlaceholder({ title }: { title: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+      <div className="rounded-xl border-2 border-dashed border-muted-foreground/30 p-10 text-center">
+        <h2 className="text-xl font-semibold mb-2">{title}</h2>
+        <p className="text-sm">This section is under construction.</p>
+      </div>
+    </div>
+  );
+}
+
 export function App() {
   return (
     <AuthProvider>
@@ -56,18 +68,26 @@ export function App() {
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
               {/* Public routes */}
-              <Route path="/" element={<div className="flex h-screen items-center justify-center"><h1 className="text-2xl font-bold text-gradient">OneForm — Coming Soon 🚀</h1></div>} />
+              <Route path="/" element={<div className="flex h-screen items-center justify-center"><h1 className="text-2xl font-bold text-gradient">OneForm — Coming Soon</h1></div>} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
 
-              {/* Protected routes — DashboardShell handles auth check */}
-              <Route path="/dashboard/*" element={<DashboardShell />} />
+              {/* Protected dashboard — DashboardShell is the layout, children fill Outlet */}
+              <Route path="/dashboard" element={<DashboardShell />}>
+                <Route index element={<DashboardPlaceholder title="Overview" />} />
+                <Route path="profiles" element={<DashboardPlaceholder title="Profiles" />} />
+                <Route path="queue" element={<DashboardPlaceholder title="Client Queue" />} />
+                <Route path="documents" element={<DashboardPlaceholder title="My Documents" />} />
+                <Route path="wallet" element={<DashboardPlaceholder title="Wallet" />} />
+                <Route path="admin" element={<DashboardPlaceholder title="Platform Management" />} />
+                <Route path="settings" element={<DashboardPlaceholder title="Settings" />} />
+              </Route>
 
-              {/* Module dashboards */}
-              <Route path="/general/*" element={<DashboardShell />} />
-              <Route path="/operator/*" element={<DashboardShell />} />
-              <Route path="/business/*" element={<DashboardShell />} />
-              <Route path="/admin/*" element={<DashboardShell />} />
+              {/* Legacy role-based paths redirect to unified dashboard */}
+              <Route path="/general/*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/operator/*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/business/*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/admin/*" element={<Navigate to="/dashboard" replace />} />
 
               {/* Catch-all redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />

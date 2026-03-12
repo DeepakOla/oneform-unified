@@ -3,10 +3,13 @@ import type { UserRole } from '@oneform/shared-types';
 
 interface AuthUser {
   id: string;
-  phone: string;
-  email?: string;
+  email: string;
+  firstName: string;
+  lastName: string | null;
+  phone?: string;
   role: UserRole;
   tenantId: string;
+  status: string;
 }
 
 interface AuthState {

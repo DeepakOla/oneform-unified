@@ -32,7 +32,7 @@ export function Header() {
       <div className="w-full flex-1">
         {/* Placeholder for global search logic future implementation */}
         <h2 className="hidden md:flex text-lg font-medium text-foreground tracking-tight">
-          Welcome back, {user?.phone || 'User'}
+          Welcome back, {user?.firstName ?? 'User'}
         </h2>
       </div>
 
@@ -53,7 +53,7 @@ export function Header() {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account
               <div className="text-xs font-normal text-muted-foreground mt-1 font-mono">
-                {user?.phone || user?.email || 'Guest User'}
+                {user?.email ?? 'Guest User'}
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

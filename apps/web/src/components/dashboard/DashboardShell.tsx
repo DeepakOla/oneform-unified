@@ -13,7 +13,7 @@ export function DashboardShell() {
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex w-full items-center justify-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <span className="text-secondary-foreground font-medium">Verifyizing Identity...</span>
+          <span className="text-secondary-foreground font-medium">Verifying Identity...</span>
         </div>
       </div>
     );

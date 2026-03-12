@@ -9,11 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Backpack, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { api } from '@/lib/api/client';
 
 const registerSchema = z.object({
-  fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  firstName: z.string().min(2, { message: "First name must be at least 2 characters" }),
+  lastName: z.string().optional(),
   email: z.string().email({ message: "Invalid email address" }),
-  phone: z.string().regex(/^[6-9]\d{9}$/, { message: "Invalid Indian mobile number" }),
   password: z.string().min(8, { message: "Password must be at least 8 characters" }),
 });
 
@@ -24,33 +25,23 @@ export function RegisterPage() {
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      fullName: '',
-      email: '',
-      phone: '',
-      password: '',
-    },
+    defaultValues: { firstName: '', lastName: '', email: '', password: '' },
   });
 
-  const onSubmit = async (_values: z.infer<typeof registerSchema>) => {
+  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
     try {
-      // API call to be connected later
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
+      await api.post('/api/auth/register', values);
       toast({
-        title: "Account Created!",
-        description: "Your CITIZEN dashboard has been initialized. Please log in.",
+        title: 'Account Created!',
+        description: 'Your workspace has been initialized. Please sign in.',
       });
-
       navigate('/login');
-      
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Registration Failed",
-        description: "An error occurred creating your profile.",
-      });
+    } catch (error: unknown) {
+      const msg =
+        (error as { response?: { data?: { error?: { message?: string } } } })
+          .response?.data?.error?.message ?? 'An error occurred creating your account.';
+      toast({ variant: 'destructive', title: 'Registration Failed', description: msg });
     } finally {
       setIsLoading(false);
     }
@@ -76,50 +67,42 @@ export function RegisterPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input 
-                id="fullName" 
-                placeholder="Rahul Kumar" 
-                {...form.register('fullName')}
-                disabled={isLoading}
-              />
-              {form.formState.errors.fullName && (
-                <p className="text-xs text-destructive">{form.formState.errors.fullName.message}</p>
-              )}
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Mobile (10 digit)</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">+91</span>
-                  <Input 
-                    id="phone" 
-                    className="pl-10"
-                    placeholder="9876543210" 
-                    {...form.register('phone')}
-                    disabled={isLoading}
-                  />
-                </div>
-                {form.formState.errors.phone && (
-                  <p className="text-xs text-destructive">{form.formState.errors.phone.message}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="name@example.com" 
-                  {...form.register('email')}
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  placeholder="Rahul"
+                  {...form.register('firstName')}
                   disabled={isLoading}
                 />
-                {form.formState.errors.email && (
-                  <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+                {form.formState.errors.firstName && (
+                  <p className="text-xs text-destructive">{form.formState.errors.firstName.message}</p>
                 )}
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  placeholder="Kumar"
+                  {...form.register('lastName')}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                {...form.register('email')}
+                disabled={isLoading}
+              />
+              {form.formState.errors.email && (
+                <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+              )}
             </div>
             
             <div className="space-y-2 pt-2">

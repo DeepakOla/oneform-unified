@@ -11,8 +11,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Backpack, Loader2, Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { api } from '@/lib/api/client';
 
-// We'll use a local subset of the Zod schemas for the UI to handle quick validations
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
   password: z.string().min(1, { message: "Password is required" }),
@@ -25,52 +25,36 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
 
-  // React Router v7 state hook to get return URL
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/dashboard';
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+    defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
     try {
-      // Mock API call based on old flow structure (until API is fully wired up)
-      // const response = await api.post('/api/auth/login', values);
-      
-      // Simulating network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Simulate successful login with a mock token and user
-      const mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock_token.signature";
-      const mockUser = {
-        id: "usr_mock123",
-        phone: "+919876543210",
-        email: values.email,
-        role: "CITIZEN" as const,
-        tenantId: "t_root"
-      };
+      const response = await api.post<{
+        success: boolean;
+        data: {
+          tokens: { accessToken: string; refreshToken: string; expiresIn: number };
+          user: { id: string; tenantId: string; email: string; firstName: string; lastName: string | null; role: string; status: string };
+        };
+      }>('/api/auth/login', values);
 
-      login(mockToken, mockUser);
-      
-      toast({
-        title: "Welcome back!",
-        description: "Successfully logged into OneForm. Redirecting...",
-      });
+      const { tokens, user } = response.data.data;
 
-      // Hard navigation to reset React Router internal state and load dashboard clean
+      localStorage.setItem('refresh_token', tokens.refreshToken);
+      login(tokens.accessToken, { ...user, role: user.role as import('@oneform/shared-types').UserRole });
+
+      toast({ title: 'Welcome back!', description: `Signed in as ${user.firstName}` });
       window.location.href = from;
-      
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: error.response?.data?.error || "Invalid credentials. Please try again.",
-      });
+    } catch (error: unknown) {
+      const msg =
+        (error as { response?: { data?: { error?: { message?: string } } } })
+          .response?.data?.error?.message ?? 'Invalid credentials. Please try again.';
+      toast({ variant: 'destructive', title: 'Login Failed', description: msg });
     } finally {
       setIsLoading(false);
     }
