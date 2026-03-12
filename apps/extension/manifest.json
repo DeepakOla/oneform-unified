@@ -1,0 +1,88 @@
+{
+  "manifest_version": 3,
+  "name": "OneForm AI Autofill - Indian Forms",
+  "version": "2.1.0",
+  "description": "Auto-fill Indian government forms in 11 languages. Works on ALL devices (even 2GB RAM laptops). 85-90% accuracy. CSC center compatible. Bank-level encryption.",
+  "icons": {
+    "16": "icons/icon-16.svg",
+    "32": "icons/icon-32.svg",
+    "48": "icons/icon-48.svg",
+    "128": "icons/icon-128.svg"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "optional_host_permissions": [
+    "*://*.gov.in/*",
+    "*://*.nic.in/*",
+    "*://*.indianrailways.gov.in/*",
+    "*://*.nta.ac.in/*",
+    "*://*.jeemain.nta.nic.in/*",
+    "*://*.neet.nta.nic.in/*",
+    "*://*.scholarships.gov.in/*",
+    "*://*.digilocker.gov.in/*",
+    "*://*.incometax.gov.in/*",
+    "*://*.gst.gov.in/*",
+    "*://*.uidai.gov.in/*",
+    "*://*.epfindia.gov.in/*",
+    "*://*.nsws.gov.in/*",
+    "*://*.startupindia.gov.in/*",
+    "*://*.mca.gov.in/*",
+    "*://*.passport.gov.in/*",
+    "*://*.visa.gov.in/*",
+    "*://*.ignou.ac.in/*",
+    "*://*.naukri.com/*",
+    "*://*.shine.com/*",
+    "*://*.freshersworld.com/*",
+    "*://*.timesjobs.com/*",
+    "*://*.monster.co.in/*",
+    "*://*.linkedin.com/*",
+    "*://*.indeed.co.in/*",
+    "http://localhost:*/*",
+    "https://indianform.in/*",
+    "https://skyvern.indianform.in/*"
+  ],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.gov.in/*",
+        "*://*.nic.in/*",
+        "*://*.ac.in/*"
+      ],
+      "js": [
+        "src/content/index.ts"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_icon": {
+      "16": "icons/icon-16.svg",
+      "32": "icons/icon-32.svg"
+    },
+    "default_title": "OneForm - Click to autofill / फॉर्म भरें"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "default_locale": "en",
+  "minimum_chrome_version": "88"
+}

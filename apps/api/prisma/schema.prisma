@@ -181,6 +181,8 @@ model Tenant {
   documents    Document[]
   FormTemplate FormTemplate[]
   auditLogs    AuditLog[]
+  crmConnections CRMConnection[]
+  syncJobs     SyncJob[]
 
   @@map("tenants")
 }
@@ -493,4 +495,87 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CRM SYNC JOBS & CONNECTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model CRMConnection {
+  id           String   @id @default(uuid())
+  tenantId     String
+  provider     String   // e.g., "zoho_crm", "salesforce"
+  credentials  Json     // Encrypted tokens, apiKey, url etc.
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  syncJobs     SyncJob[]
+
+  @@index([tenantId])
+  @@index([provider])
+  @@map("crm_connections")
+}
+
+model SyncJob {
+  id             String   @id @default(uuid())
+  tenantId       String
+  crmProvider    String
+  connectionId   String
+
+  status         String   @default("queued") // "pending", "queued", "processing", "completed", "failed", "dead_letter"
+  priority       String   @default("normal") // "low", "normal", "high", "critical"
+  
+  // JSON payload of data items to sync
+  dataPayload    Json
+  
+  // Progress Tracking
+  totalRecords      Int @default(0)
+  processedRecords  Int @default(0)
+  succeededRecords  Int @default(0)
+  failedRecords     Int @default(0)
+
+  // Scheduling and retries
+  attempts       Int      @default(0)
+  maxAttempts    Int      @default(3)
+  lastError      String?
+  nextRetryAt    DateTime?
+  
+  // Timestamps
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Results array as JSON
+  results        Json?
+
+  // Relations
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  connection     CRMConnection @relation(fields: [connectionId], references: [id])
+  logs           SyncJobLog[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([crmProvider])
+  @@map("sync_jobs")
+}
+
+model SyncJobLog {
+  id             String   @id @default(uuid())
+  jobId          String
+  tenantId       String
+  userId         String?
+  
+  action         String   // e.g "created", "completed", "failed", "retried"
+  metrics        Json?    // Pre-flight results or success/fail totals
+
+  createdAt      DateTime @default(now())
+
+  job            SyncJob  @relation(fields: [jobId], references: [id])
+  
+  @@index([jobId])
+  @@index([tenantId])
+  @@map("sync_job_logs")
 }
