@@ -1,0 +1,39 @@
+import { Router, type Router as ExpressRouter } from 'express';
+
+export const extensionRouter: ExpressRouter = Router();
+
+// Mock /getPendingJobs
+extensionRouter.post('/getPendingJobs', (req, res) => {
+  console.log('[Extension API] getPendingJobs requested');
+  // Return empty array to stop polling errors, or mock a job
+  res.json({ jobs: [] });
+});
+
+// Mock /getAutofillPayload
+extensionRouter.post('/getAutofillPayload', (req, res) => {
+  console.log('[Extension API] getAutofillPayload requested');
+  res.json({
+    payload: {
+      profile: {
+        person: {
+          name: { full: 'Rajesh Kumar', first: 'Rajesh', last: 'Kumar' },
+          contact: { phone: '9876543210', email: 'rajesh@example.com' },
+          dob: '1990-01-01',
+          gender: 'MALE',
+          identity: { aadhar: '123456789012', pan: 'ABCDE1234F' }
+        }
+      },
+      selectors: {}
+    }
+  });
+});
+
+// Mock /claimJob
+extensionRouter.post('/claimJob', (req, res) => {
+  res.json({ success: true });
+});
+
+// Mock /reportJobResult
+extensionRouter.post('/reportJobResult', (req, res) => {
+  res.json({ success: true });
+});

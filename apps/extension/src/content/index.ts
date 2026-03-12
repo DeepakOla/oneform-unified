@@ -1,11 +1,10 @@
 import '../styles/globals.css';
 
-console.log('OneForm Extension Content Script Loaded.');
+// Legacy OneForm dependencies executed sequentially
+import './fieldMappers.ts';
+import './portalMappings.ts';
+import '../vault/vault.ts';
+import './hardwareDetector.ts';
+import './contentScript.ts';
 
-// Basic placeholder for the migrated content scripts
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'PING') {
-    sendResponse({ status: 'PONG' });
-  }
-  return true;
-});
+console.log('OneForm Extension Content Script Loaded with Legacy Modules.');

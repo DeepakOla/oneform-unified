@@ -139,6 +139,7 @@ export async function registerRoutes(): Promise<void> {
   const { documentRouter } = await import('./routes/document.routes.js');
   const { walletRouter } = await import('./routes/wallet.routes.js');
   const { adminRouter } = await import('./routes/admin.routes.js');
+  const { extensionRouter } = await import('./routes/extension.routes.js');
   const { errorHandler, notFoundHandler } = await import('./middleware/error.middleware.js');
 
   app.use('/api/auth', authRouter);
@@ -146,6 +147,7 @@ export async function registerRoutes(): Promise<void> {
   app.use('/api/documents', documentRouter);
   app.use('/api/wallet', walletRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api', extensionRouter);
 
   // 404 — must be after all routes
   app.use(notFoundHandler);
