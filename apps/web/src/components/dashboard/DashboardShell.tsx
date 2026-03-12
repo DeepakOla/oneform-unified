@@ -1,53 +1,41 @@
-/**
- * OneForm — Dashboard Shell
- *
- * Unified dashboard for all user types (CITIZEN / OPERATOR / BUSINESS / ADMIN).
- * The sidebar modules are dynamically loaded based on the user's role.
- * This is a placeholder — full implementation in Stage 2.
- */
-export default function DashboardShell() {
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { Outlet } from 'react-router-dom';
+import { Sidebar } from './Sidebar';
+import { Header } from './Header';
+
+export function DashboardShell() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex w-full items-center justify-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <span className="text-secondary-foreground font-medium">Verifyizing Identity...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if user tries to access protected routes without auth
+  if (!isAuthenticated) {
+    // Preserve the route they were trying to access to redirect back after login
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
   return (
-    <div className="flex h-screen w-full bg-background">
-      {/* Sidebar placeholder */}
-      <aside className="hidden w-64 border-r bg-card md:flex flex-col p-4">
-        <div className="mb-6">
-          <div className="text-xl font-bold text-gradient">OneForm</div>
-          <div className="text-xs text-muted-foreground mt-1">Unified Platform</div>
-        </div>
-        <nav className="space-y-1 flex-1">
-          {['Dashboard', 'Profiles', 'Documents', 'Forms', 'Wallet', 'Settings'].map((item) => (
-            <button
-              key={item}
-              className="w-full text-left px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              {item}
-            </button>
-          ))}
-        </nav>
-      </aside>
-
-      {/* Main content placeholder */}
-      <main className="flex-1 overflow-auto p-6">
-        <div className="mx-auto max-w-4xl">
-          <h1 className="text-2xl font-bold mb-2">Welcome to OneForm</h1>
-          <p className="text-muted-foreground mb-8">Your dashboard is being built. Check back soon!</p>
-
-          {/* Quick action cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { title: 'Create Profile', desc: 'Set up your ABCD profile for autofill', icon: '👤' },
-              { title: 'Upload Documents', desc: 'Upload Aadhaar, PAN, certificates', icon: '📄' },
-              { title: 'Fill a Form', desc: '500+ government forms supported', icon: '📝' },
-            ].map((card) => (
-              <div key={card.title} className="rounded-lg border bg-card p-4 hover:border-primary transition-colors cursor-pointer">
-                <div className="text-2xl mb-2">{card.icon}</div>
-                <div className="font-semibold text-sm">{card.title}</div>
-                <div className="text-xs text-muted-foreground mt-1">{card.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
+    <div className="flex h-screen overflow-hidden bg-background">
+      <Sidebar />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-y-auto bg-muted/40 p-4 md:p-6 lg:p-8">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
+
+export default DashboardShell;

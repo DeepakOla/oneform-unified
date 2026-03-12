@@ -12,6 +12,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { lazy, Suspense } from 'react';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 // Lazy-loaded module pages (reduces initial bundle size)
 const LoginPage = lazy(() => import('@/components/modules/auth/LoginPage.js'));
@@ -49,32 +50,34 @@ function LoadingFallback() {
 
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<div className="flex h-screen items-center justify-center"><h1 className="text-2xl font-bold text-gradient">OneForm — Coming Soon 🚀</h1></div>} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<div className="flex h-screen items-center justify-center"><h1 className="text-2xl font-bold text-gradient">OneForm — Coming Soon 🚀</h1></div>} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
 
-            {/* Protected routes — DashboardShell handles auth check */}
-            <Route path="/dashboard/*" element={<DashboardShell />} />
+              {/* Protected routes — DashboardShell handles auth check */}
+              <Route path="/dashboard/*" element={<DashboardShell />} />
 
-            {/* Module dashboards */}
-            <Route path="/general/*" element={<DashboardShell />} />
-            <Route path="/operator/*" element={<DashboardShell />} />
-            <Route path="/business/*" element={<DashboardShell />} />
-            <Route path="/admin/*" element={<DashboardShell />} />
+              {/* Module dashboards */}
+              <Route path="/general/*" element={<DashboardShell />} />
+              <Route path="/operator/*" element={<DashboardShell />} />
+              <Route path="/business/*" element={<DashboardShell />} />
+              <Route path="/admin/*" element={<DashboardShell />} />
 
-            {/* Catch-all redirect */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+              {/* Catch-all redirect */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
 
-      {/* TanStack Query Devtools — only in development */}
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-    </QueryClientProvider>
+        {/* TanStack Query Devtools — only in development */}
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      </QueryClientProvider>
+    </AuthProvider>
   );
 }
