@@ -1,0 +1,67 @@
+# OneForm Unified Platform — .gitignore
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Environment variables — NEVER commit these!
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Turbo
+.turbo/
+
+# Editor
+.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Test coverage
+coverage/
+playwright-report/
+test-results/
+
+# Prisma
+apps/api/prisma/dev.db
+apps/api/prisma/dev.db-journal
+
+# Docker volumes (local)
+postgres_data/
+redis_data/
+
+# TypeScript
+*.tsbuildinfo
+
+# SSL certificates (local dev)
+*.pem
+*.key
+*.crt
+
+# Secret files
+*.secret
+vault.json
+auth_info_baileys/

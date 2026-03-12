@@ -1,0 +1,496 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// OneForm Unified Platform — PostgreSQL 17 Schema
+// Date: March 2026
+//
+// IMPORTANT RULES:
+// 1. All timestamps use @default(now()) + @updatedAt — never set manually
+// 2. All tables have tenant_id for Row Level Security
+// 3. Monetary values stored in INTEGER PAISA (100 paisa = ₹1) — NO floats
+// 4. Section A stored as encrypted BYTES — never plaintext JSON in DB
+// 5. All cascades are explicit — no accidental data deletion
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  CITIZEN
+  OPERATOR
+  BUSINESS
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+  DEACTIVATED
+}
+
+enum ProfileType {
+  student
+  farmer
+  business
+  professional
+  general
+}
+
+enum ProfileStatus {
+  DRAFT
+  PENDING_VERIFICATION
+  VERIFIED
+  SUSPENDED
+}
+
+enum DocumentType {
+  AADHAAR
+  PAN
+  VOTER_ID
+  PASSPORT
+  DRIVING_LICENSE
+  BIRTH_CERTIFICATE
+  CASTE_CERTIFICATE
+  INCOME_CERTIFICATE
+  DOMICILE_CERTIFICATE
+  DISABILITY_CERTIFICATE
+  EDUCATION_CERTIFICATE
+  MARK_SHEET
+  DEGREE_CERTIFICATE
+  EXPERIENCE_LETTER
+  SALARY_SLIP
+  BANK_STATEMENT
+  PROPERTY_DOCUMENT
+  RATION_CARD
+  UDID
+  GSTIN_CERTIFICATE
+  SHOP_ESTABLISHMENT
+  TRADE_LICENSE
+  UDYAM_CERTIFICATE
+  FSSAI_LICENSE
+  PHOTO
+  SIGNATURE
+  THUMB_IMPRESSION
+  OTHER
+}
+
+enum DocumentStatus {
+  UPLOADED
+  OCR_PROCESSING
+  OCR_COMPLETE
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+  REFUND
+  OPERATOR_EARN
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum TenantType {
+  INDIVIDUAL
+  CSC_OPERATOR
+  CA_FIRM
+  HR_COMPANY
+  NGO
+  COMPANY
+  HOSPITAL
+  EDUCATIONAL
+  GOVERNMENT
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+  CANCELLED
+}
+
+enum VerificationStatus {
+  PENDING
+  IN_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum OAuthProvider {
+  google
+  digilocker
+  linkedin
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TENANT (Multi-tenancy root)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Tenant {
+  id        String       @id @default(uuid())
+  name      String
+  slug      String       @unique  // acme.indianform.in
+  type      TenantType
+  status    TenantStatus @default(TRIAL)
+
+  // Contact
+  email     String
+  phone     String?
+  address   Json?
+  branding  Json?        // TenantBranding
+
+  // Verification
+  gstin                String?
+  pan                  String?
+  verificationStatus   VerificationStatus @default(PENDING)
+
+  // Plan
+  planId               String?
+
+  // Overrides
+  maxUsers             Int?
+  maxProfiles          Int?
+  maxStorageBytes      BigInt?
+  features             Json    @default("{}")  // Record<string, boolean>
+
+  // Timestamps
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  users        User[]
+  profiles     Profile[]
+  documents    Document[]
+  FormTemplate FormTemplate[]
+  auditLogs    AuditLog[]
+
+  @@map("tenants")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id       String     @id @default(uuid())
+  tenantId String
+
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  phone         String?
+  phoneVerified Boolean  @default(false)
+  // Argon2id hashed password — null for OAuth-only users
+  passwordHash  String?
+
+  firstName   String
+  lastName    String?
+  displayName String?
+  avatarUrl   String?
+
+  role         UserRole   @default(CITIZEN)
+  businessType String?
+  permissions  String[]   @default([])
+
+  status    UserStatus @default(PENDING_VERIFICATION)
+  lastLoginAt DateTime?
+  lastLoginIp String?
+
+  preferences Json @default("{\"theme\":\"system\",\"language\":\"hi\",\"notifications\":{\"email\":true,\"sms\":true,\"push\":true,\"whatsapp\":false,\"telegram\":false},\"onboardingCompleted\":false}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  oauthAccounts OAuthAccount[]
+  sessions      Session[]
+  profiles      Profile[]      @relation("ProfileOwner")
+  operatedProfiles Profile[]   @relation("ProfileOperator")
+  documents     Document[]
+  wallet        Wallet?
+  auditLogs     AuditLog[]
+
+  @@index([tenantId])
+  @@index([email])
+  @@index([phone])
+  @@map("users")
+}
+
+// OAuth accounts (Google, DigiLocker, etc.)
+model OAuthAccount {
+  id                String        @id @default(uuid())
+  userId            String
+  provider          OAuthProvider
+  providerAccountId String
+  accessToken       String?
+  refreshToken      String?
+  tokenExpiry       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+// Login sessions (JWT refresh token storage)
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  // Hashed refresh token (never store raw tokens!)
+  tokenHash String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROFILE (ABCD System)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Profile {
+  id         String      @id @default(uuid())
+  tenantId   String
+  ownerId    String
+  operatorId String?
+
+  profileCode String        @unique  // Human-readable: "P-2026-001234"
+  profileType ProfileType
+  status      ProfileStatus @default(DRAFT)
+
+  // SECTION A — Encrypted AES-256-GCM
+  // ⚠️  sectionAEncrypted contains the entire SectionA object encrypted as bytes.
+  // NEVER store plaintext PII here. See encryption.service.ts for implementation.
+  sectionAEncrypted Bytes?   // AES-256-GCM encrypted SectionA JSON
+  sectionAIv        String?  // Base64 IV used during encryption
+  sectionAKeyVersion Int?    // Which KEK version was used (for key rotation)
+  sectionAUpdatedAt DateTime?
+
+  // SECTION B — Demographics (JSON, not encrypted, RLS enforced)
+  sectionB Json?  // SectionB
+
+  // SECTION C — Qualifications (JSON, not encrypted, RLS enforced)
+  sectionC Json?  // SectionC
+
+  // SECTION D — Operational/role-specific (JSON, not encrypted)
+  sectionD Json?  // SectionD
+
+  // Computed completeness (cached, updated on each section save)
+  completenessA Int @default(0)  // 0-100
+  completenessB Int @default(0)
+  completenessC Int @default(0)
+  completenessD Int @default(0)
+  completenessOverall Int @default(0)
+
+  verifiedAt DateTime?
+  verifiedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  owner    User   @relation("ProfileOwner", fields: [ownerId], references: [id])
+  operator User?  @relation("ProfileOperator", fields: [operatorId], references: [id])
+  documents Document[]
+
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([operatorId])
+  @@index([profileType])
+  @@index([status])
+  @@map("profiles")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOCUMENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Document {
+  id        String @id @default(uuid())
+  tenantId  String
+  userId    String
+  profileId String?
+
+  type        DocumentType
+  displayName String?
+
+  // Cloudflare R2 storage
+  r2Key    String  // Object key in R2 bucket
+  mimeType String
+  sizeBytes BigInt
+  checksum  String  // SHA-256
+
+  status     DocumentStatus       @default(UPLOADED)
+  ocrResult  Json?                // OcrExtractionResult
+  expiresAt  DateTime?
+  isDigiLocker Boolean            @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+  profile Profile? @relation(fields: [profileId], references: [id])
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([profileId])
+  @@index([type])
+  @@map("documents")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FORM TEMPLATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model FormTemplate {
+  id       String @id @default(uuid())
+  tenantId String
+
+  name        String
+  description String?
+  portalUrl   String   // The government portal URL
+  category    String   // "GST", "ITR", "scholarship", etc.
+
+  // Field mappings: profile field → form field selector
+  // Format: { "sectionA.name.full": "#full-name-input", "sectionA.pan": "#pan-field" }
+  fieldMappings Json
+
+  // Skyvern automation script (optional)
+  skyvernScript Json?
+
+  isActive     Boolean @default(true)
+  isVerified   Boolean @default(false)
+  verifiedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([category])
+  @@index([portalUrl])
+  @@map("form_templates")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WALLET (Financial)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Wallet {
+  id       String @id @default(uuid())
+  tenantId String
+  userId   String @unique  // One wallet per user
+
+  // ALL AMOUNTS IN INTEGER PAISA (100 paisa = ₹1)
+  // NEVER use float/decimal for money — prevents rounding errors
+  balancePaisa       BigInt @default(0)
+  totalCreditedPaisa BigInt @default(0)
+  totalDebitedPaisa  BigInt @default(0)
+
+  isLocked Boolean @default(false)  // Locked during active transaction
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id])
+  transactions WalletTransaction[]
+
+  @@index([userId])
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id       String @id @default(uuid())
+  walletId String
+  tenantId String
+  userId   String
+
+  type   TransactionType
+  status TransactionStatus @default(PENDING)
+
+  // ALL in PAISA
+  amountPaisa      BigInt
+  balanceAfterPaisa BigInt
+
+  description  String
+  referenceId  String?   // autofillId, formId, Razorpay orderId
+
+  gateway          String?  // "RAZORPAY", "CASHFREE", etc.
+  gatewayOrderId   String?
+  gatewayPaymentId String?
+  gatewaySignature String?
+
+  metadata  Json?
+
+  createdAt DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([userId])
+  @@index([status])
+  @@map("wallet_transactions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG (Immutable — append-only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id       String  @id @default(uuid())
+  tenantId String
+  userId   String?
+
+  action       String   // AuditAction enum value
+  resourceType String
+  resourceId   String
+  ipAddress    String?
+  userAgent    String?
+  metadata     Json?
+
+  // Audit logs are IMMUTABLE — no updatedAt
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
