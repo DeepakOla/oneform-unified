@@ -1,0 +1,23 @@
+{
+  "name": "@oneform/shared-types",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Shared TypeScript type contracts for the OneForm Unified Platform",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@oneform/validation",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Centralised Zod validation schemas for the OneForm Unified Platform",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@oneform/shared-types": "*",
+    "typescript": "^5.4.5"
+  }
+}

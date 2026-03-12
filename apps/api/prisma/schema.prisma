@@ -1,0 +1,135 @@
+// ============================================================================
+// OneForm Unified Platform — Prisma Schema
+// ============================================================================
+// Database: PostgreSQL (managed via Prisma ORM)
+// Multi-tenancy strategy: Row-Level Security (RLS) at the database layer,
+// combined with tenantId-scoped Prisma queries at the application layer.
+//
+// Data residency: this schema is deployed exclusively to the Indian Alpha
+// data-plane. No PII leaves this boundary in unencrypted form.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Tenant — top-level isolation unit
+// ---------------------------------------------------------------------------
+// Every operator (NGO, CA firm, business aggregator) is a separate Tenant.
+// All data reads/writes MUST be scoped to a single tenantId.
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id        String   @id @default(cuid())
+  /// Human-readable slug used in API paths and JWT claims (e.g. "acme-corp")
+  slug      String   @unique
+  /// Display name shown in the operator dashboard
+  name      String
+  /// Whether this tenant is active; inactive tenants are denied API access
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users    User[]
+  profiles Profile[]
+
+  @@map("tenants")
+}
+
+// ---------------------------------------------------------------------------
+// User — a human operator belonging to a Tenant
+// ---------------------------------------------------------------------------
+// A User always belongs to exactly one Tenant. The JWT issued on login
+// carries both userId and tenantId as claims.
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  tenantId     String
+  /// Email address — must be unique within the platform (cross-tenant)
+  email        String   @unique
+  /// bcrypt hash of the user's password. Never store plaintext.
+  passwordHash String
+  /// Display name
+  fullName     String
+  role         UserRole @default(OPERATOR)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  profiles Profile[]
+
+  // Indexes
+  @@index([tenantId])
+  @@map("users")
+}
+
+/// Role-based access control roles.
+enum UserRole {
+  SUPER_ADMIN /// Platform-level administrator (OneForm team only)
+  ADMIN       /// Tenant-level administrator
+  OPERATOR    /// Regular operator creating / managing profiles
+  VIEWER      /// Read-only access
+}
+
+// ---------------------------------------------------------------------------
+// Profile — citizen ABCD data record
+// ---------------------------------------------------------------------------
+// Each Profile belongs to exactly one Tenant and is created by one User.
+// The ABCD payload is stored as JSONB to allow schema evolution without
+// constant migrations, while GIN indexes support deep-field queries.
+//
+// Security: Section A (PAN, Aadhaar) inside profileData must be AES-256
+// encrypted before insert. Decryption happens only within the API process.
+// ---------------------------------------------------------------------------
+
+model Profile {
+  id        String        @id @default(cuid())
+  /// Strictly enforced tenant scope — every query must filter by this field
+  tenantId  String
+  /// The operator user who created this profile
+  createdBy String
+  /// Current lifecycle state of the profile
+  status    ProfileStatus @default(DRAFT)
+
+  /// The full ABCD payload stored as PostgreSQL JSONB.
+  /// Section A values (PAN, Aadhaar) are AES-256 encrypted within this blob.
+  profileData Json
+
+  /// Tracks the last automation run associated with this profile
+  lastAutomationId String?
+  /// ISO 8601 timestamp of the last successful AI automation sync
+  lastSyncedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  creator User   @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+
+  // Indexes — optimised for per-tenant list queries and GIN deep JSONB lookups
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([createdBy])
+  @@map("profiles")
+}
+
+/// Lifecycle states for a citizen profile.
+enum ProfileStatus {
+  DRAFT      /// Profile data incomplete; not submitted for automation
+  PENDING    /// Submitted and queued for AI automation
+  PROCESSING /// Currently being processed by the Hetzner execution engine
+  COMPLETED  /// Automation succeeded; portal submission confirmed
+  FAILED     /// Automation failed after maximum retries
+  ARCHIVED   /// Manually archived by an operator
+}
