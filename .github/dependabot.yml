@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # Root + all workspace packages use pnpm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
+      radix:
+        patterns: ["@radix-ui/*"]
+      aws-sdk:
+        patterns: ["@aws-sdk/*"]
+      tanstack:
+        patterns: ["@tanstack/*"]
+    ignore:
+      # Turbo major versions need manual review
+      - dependency-name: "turbo"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
