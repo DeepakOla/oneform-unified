@@ -1,0 +1,10 @@
+name = "oneform-unified-web"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+pages_build_output_dir = "./dist"
+
+[env.production]
+# Production environment variables (non-secret)
+# Secrets (VITE_API_URL, etc.) are set via the Cloudflare Pages dashboard
+# or via GitHub Actions secrets passed at build time.

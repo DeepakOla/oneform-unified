@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -25,12 +25,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: pnpm --filter @oneform/api exec prisma generate
+
+      - name: Build shared packages
+        run: pnpm --filter @oneform/shared-types build && pnpm --filter @oneform/validation build
+
       - name: Build Web App
         run: pnpm --filter @oneform/web run build
+        env:
+          # Production API URL — set VITE_API_URL secret in GitHub repo settings
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/web/dist --project-name=oneform-unified-web
+          command: pages deploy apps/web/dist --project-name=oneform-unified-web --branch=main
