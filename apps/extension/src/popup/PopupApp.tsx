@@ -38,7 +38,7 @@ export function PopupApp() {
             </p>
             <button 
               className="mt-2 text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-md shadow-sm transition-all"
-              onClick={() => chrome.tabs.create({ url: 'https://app.indianform.in/login' })}
+              onClick={() => chrome.tabs.create({ url: 'https://indianform.com/login' })}
             >
               Connect Account
             </button>

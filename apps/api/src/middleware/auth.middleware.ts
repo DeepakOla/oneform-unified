@@ -140,7 +140,7 @@ export function requireRole(...roles: UserRole[]) {
  */
 export async function injectTenantContext(
   req: Request,
-  _res: Response,
+  res: Response,
   next: NextFunction,
 ): Promise<void> {
   if (req.user?.tenantId) {
@@ -151,6 +151,11 @@ export async function injectTenantContext(
       );
     } catch (error) {
       logger.error({ error }, 'Failed to set tenant context for RLS');
+      res.status(500).json({
+        success: false,
+        error: { code: 'TENANT_CONTEXT_ERROR', message: 'Failed to initialize request context.' },
+      });
+      return;
     }
   }
   next();

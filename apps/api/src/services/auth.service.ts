@@ -117,50 +117,55 @@ export async function registerUser(input: {
     ? `${firstName} ${lastName}'s Workspace`
     : `${firstName}'s Workspace`;
 
-  const tenant = await prisma.tenant.create({
-    data: {
-      name: tenantName,
-      slug,
-      type: 'INDIVIDUAL',
-      email,
-      status: 'ACTIVE',
-    },
+  // Atomic: create Tenant + User + Session in one transaction
+  const result = await prisma.$transaction(async (tx) => {
+    const t = await tx.tenant.create({
+      data: {
+        name: tenantName,
+        slug,
+        type: 'INDIVIDUAL',
+        email,
+        status: 'ACTIVE',
+      },
+    });
+
+    const u = await tx.user.create({
+      data: {
+        tenantId: t.id,
+        email,
+        firstName,
+        lastName: lastName ?? null,
+        role: role as UserRole,
+        passwordHash,
+        status: 'ACTIVE',
+      },
+    });
+
+    const tokens = await issueTokenPair(u.id, t.id, role as UserRole);
+
+    await tx.session.create({
+      data: {
+        userId: u.id,
+        tokenHash: hashToken(tokens.refreshToken),
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+      },
+    });
+
+    return { tenant: t, user: u, refreshToken: tokens.refreshToken, accessToken: tokens.accessToken };
   });
 
-  const user = await prisma.user.create({
-    data: {
-      tenantId: tenant.id,
-      email,
-      firstName,
-      lastName: lastName ?? null,
-      role: role as UserRole,
-      passwordHash,
-      status: 'ACTIVE',
-    },
-  });
-
-  const { accessToken, refreshToken } = await issueTokenPair(user.id, tenant.id, role as UserRole);
-
-  await prisma.session.create({
-    data: {
-      userId: user.id,
-      tokenHash: hashToken(refreshToken),
-      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-    },
-  });
-
-  logger.info({ userId: user.id, tenantId: tenant.id, role }, 'User registered');
+  logger.info({ userId: result.user.id, tenantId: result.tenant.id, role }, 'User registered');
 
   return {
-    tokens: { accessToken, refreshToken, expiresIn: ACCESS_TOKEN_TTL_SECS },
+    tokens: { accessToken: result.accessToken, refreshToken: result.refreshToken, expiresIn: ACCESS_TOKEN_TTL_SECS },
     user: {
-      id: user.id,
-      tenantId: user.tenantId,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      status: user.status,
+      id: result.user.id,
+      tenantId: result.user.tenantId,
+      email: result.user.email,
+      firstName: result.user.firstName,
+      lastName: result.user.lastName,
+      role: result.user.role,
+      status: result.user.status,
     },
   };
 }

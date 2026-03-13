@@ -1,37 +1,36 @@
 import { Router, type Router as ExpressRouter } from 'express';
+import { authenticate } from '../middleware/auth.middleware.js';
 
 export const extensionRouter: ExpressRouter = Router();
 
-// Mock /getPendingJobs
+// All extension routes require authentication
+extensionRouter.use(authenticate);
+
+// Stub /getPendingJobs — returns empty job list (real impl in Phase 1)
 extensionRouter.post('/getPendingJobs', (_req, res) => {
-  // Return empty array to stop polling errors, or mock a job
-  res.json({ jobs: [] });
+  res.json({ success: true, data: { jobs: [] } });
 });
 
-// Mock /getAutofillPayload
+// Stub /getAutofillPayload — returns 501 until real implementation
 extensionRouter.post('/getAutofillPayload', (_req, res) => {
-  res.json({
-    payload: {
-      profile: {
-        person: {
-          name: { full: 'Rajesh Kumar', first: 'Rajesh', last: 'Kumar' },
-          contact: { phone: '9876543210', email: 'rajesh@example.com' },
-          dob: '1990-01-01',
-          gender: 'MALE',
-          identity: { aadhar: '123456789012', pan: 'ABCDE1234F' }
-        }
-      },
-      selectors: {}
-    }
+  res.status(501).json({
+    success: false,
+    error: { code: 'NOT_IMPLEMENTED', message: 'Autofill payload endpoint not yet implemented.' },
   });
 });
 
-// Mock /claimJob
+// Stub /claimJob
 extensionRouter.post('/claimJob', (_req, res) => {
-  res.json({ success: true });
+  res.status(501).json({
+    success: false,
+    error: { code: 'NOT_IMPLEMENTED', message: 'Job claim endpoint not yet implemented.' },
+  });
 });
 
-// Mock /reportJobResult
+// Stub /reportJobResult
 extensionRouter.post('/reportJobResult', (_req, res) => {
-  res.json({ success: true });
+  res.status(501).json({
+    success: false,
+    error: { code: 'NOT_IMPLEMENTED', message: 'Job result endpoint not yet implemented.' },
+  });
 });

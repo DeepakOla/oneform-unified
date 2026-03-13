@@ -46,7 +46,7 @@ export interface TenantAddress {
 export interface Tenant {
   id: string;
   name: string;
-  /** Subdomain slug: acme.indianform.in */
+  /** Subdomain slug: acme.indianform.com */
   slug: string;
   type: TenantType;
   status: TenantStatus;

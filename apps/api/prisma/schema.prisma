@@ -147,7 +147,7 @@ enum OAuthProvider {
 model Tenant {
   id        String       @id @default(uuid())
   name      String
-  slug      String       @unique  // acme.indianform.in
+  slug      String       @unique  // acme.indianform.com
   type      TenantType
   status    TenantStatus @default(TRIAL)
 
@@ -291,12 +291,14 @@ model Profile {
   status      ProfileStatus @default(DRAFT)
 
   // SECTION A — Encrypted AES-256-GCM
-  // ⚠️  sectionAEncrypted contains the entire SectionA object encrypted as bytes.
+  // ⚠️  sectionAEncrypted contains the AES-256-GCM ciphertext as bytes.
   // NEVER store plaintext PII here. See encryption.service.ts for implementation.
-  sectionAEncrypted Bytes?   // AES-256-GCM encrypted SectionA JSON
-  sectionAIv        String?  // Base64 IV used during encryption
-  sectionAKeyVersion Int?    // Which KEK version was used (for key rotation)
-  sectionAUpdatedAt DateTime?
+  sectionAEncrypted  Bytes?   // AES-256-GCM ciphertext (raw bytes)
+  sectionAIv         String?  // Base64 IV (nonce) used during encryption
+  sectionAAuthTag    String?  // Base64 GCM authentication tag (tamper-proof)
+  sectionAWrappedDek String?  // Base64 wrapped (encrypted) Data Encryption Key
+  sectionAKeyVersion Int?     // Which KEK version was used (for key rotation)
+  sectionAUpdatedAt  DateTime?
 
   // SECTION B — Demographics (JSON, not encrypted, RLS enforced)
   sectionB Json?  // SectionB

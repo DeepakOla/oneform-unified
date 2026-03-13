@@ -41,8 +41,8 @@
     "*://*.linkedin.com/*",
     "*://*.indeed.co.in/*",
     "http://localhost:*/*",
-    "https://indianform.in/*",
-    "https://skyvern.indianform.in/*"
+    "https://indianform.com/*",
+    "https://skyvern.indianform.com/*"
   ],
   "background": {
     "service_worker": "src/background/index.ts",

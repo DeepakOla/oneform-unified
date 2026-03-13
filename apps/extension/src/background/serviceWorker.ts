@@ -1102,7 +1102,7 @@ async function callOpenRouterAPI(apiKey, field) {
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://indianform.in',
+      'HTTP-Referer': 'https://indianform.com',
       'X-Title': 'OneForm Extension'
     },
     body: JSON.stringify({

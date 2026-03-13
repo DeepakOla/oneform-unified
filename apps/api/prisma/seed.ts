@@ -28,7 +28,7 @@ async function main() {
       slug: 'oneform-root',
       type: 'GOVERNMENT',
       status: 'ACTIVE',
-      email: 'admin@indianform.in',
+      email: 'admin@indianform.com',
       verificationStatus: 'VERIFIED',
     },
   });
@@ -39,11 +39,11 @@ async function main() {
   // ──────────────────────────────────────────────────────
   const adminHash = await hash('Admin@1234');
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@indianform.in' },
+    where: { email: 'admin@indianform.com' },
     update: {},
     create: {
       tenantId: adminTenant.id,
-      email: 'admin@indianform.in',
+      email: 'admin@indianform.com',
       firstName: 'OneForm',
       lastName: 'Admin',
       role: 'SUPER_ADMIN',
@@ -112,7 +112,7 @@ async function main() {
   console.log('✅ Seed complete.');
   console.log('');
   console.log('Dev credentials:');
-  console.log('  Admin:   admin@indianform.in  / Admin@1234');
+  console.log('  Admin:   admin@indianform.com  / Admin@1234');
   console.log('  Citizen: citizen@example.com  / Citizen@1234');
 }
 

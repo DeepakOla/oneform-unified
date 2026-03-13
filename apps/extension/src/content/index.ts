@@ -4,7 +4,7 @@ import '../styles/globals.css';
 import './fieldMappers.ts';
 import './portalMappings.ts';
 import '../vault/vault.ts';
-import './hardwareDetector.ts';
+
 import './contentScript.ts';
 
 console.log('OneForm Extension Content Script Loaded with Legacy Modules.');

@@ -170,29 +170,46 @@ function determineAction(score: number, config: DeduplicationConfig): Deduplicat
 }
 
 // ============================================================
-// DEDUPLICATION SQL FUNCTIONS
+// DEDUPLICATION QUERY FUNCTIONS
 // ============================================================
 
-async function findPotentialMatches(candidate: DeduplicationCandidate, tenantId: string, config: DeduplicationConfig): Promise<Array<any>> {
-  // Use Prisma's JSONB raw queries and field exact matches
-  const conditions = [];
-  
-  if (candidate.email) conditions.push(`email = '${normalizeEmail(candidate.email)}'`);
-  if (candidate.phone) conditions.push(`"phoneNormalized" = '${normalizePhone(candidate.phone)}'`);
-  if (candidate.pan) conditions.push(`UPPER(pan) = '${candidate.pan.toUpperCase()}'`);
-  if (candidate.gstin) conditions.push(`UPPER(gstin) = '${candidate.gstin.toUpperCase()}'`);
+/**
+ * Find potential duplicate profiles within a tenant.
+ *
+ * NOTE: The Profile model stores PII encrypted in sectionAEncrypted.
+ * Columns like email, phone, pan do NOT exist as top-level DB columns.
+ * We fetch profiles in the tenant and extract searchable fields from sectionB JSON.
+ * Future optimization: maintain a hash index for dedup-relevant fields.
+ */
+async function findPotentialMatches(candidate: DeduplicationCandidate, tenantId: string, config: DeduplicationConfig): Promise<Array<DeduplicationCandidate>> {
+  const profiles = await prisma.profile.findMany({
+    where: { tenantId },
+    select: { id: true, sectionB: true },
+    take: config.maxCandidatesToCheck,
+  });
 
-  if (conditions.length === 0) return [];
-  
-  // NOTE: Assuming there's a JSON profile format using SQL Raw to leverage JSONB GIN indexes. For now, pseudo-Prisma call.
-  const rawResults: any[] = await prisma.$queryRawUnsafe(`
-    SELECT * FROM "Profile" 
-    WHERE "tenantId" = $1 
-    AND (${conditions.join(' OR ')})
-    LIMIT $2
-  `, tenantId, config.maxCandidatesToCheck);
-  
-  return rawResults;
+  const matches: DeduplicationCandidate[] = [];
+  for (const profile of profiles) {
+    if (profile.id === candidate.profileId) continue;
+
+    const sectionB = profile.sectionB as Record<string, unknown> | null;
+    if (!sectionB) continue;
+
+    matches.push({
+      profileId: profile.id,
+      email: sectionB['email'] as string | undefined,
+      phone: sectionB['phone'] as string | undefined,
+      firstName: sectionB['firstName'] as string | undefined,
+      lastName: sectionB['lastName'] as string | undefined,
+      pan: sectionB['pan'] as string | undefined,
+      aadhaarLast4: sectionB['aadhaarLast4'] as string | undefined,
+      dob: sectionB['dob'] as string | undefined,
+      gstin: sectionB['gstin'] as string | undefined,
+      companyName: sectionB['companyName'] as string | undefined,
+    });
+  }
+
+  return matches;
 }
 
 export async function checkDuplicate(candidate: DeduplicationCandidate, tenantId: string, config: DeduplicationConfig = DEFAULT_CONFIG): Promise<DeduplicationResult> {
@@ -203,28 +220,14 @@ export async function checkDuplicate(candidate: DeduplicationCandidate, tenantId
     confidence: 100 
   };
   if (potentialMatches.length === 0) return emptyResult;
-  
+
   let bestMatch: MatchResult | null = null;
-  for (const matchDoc of potentialMatches) {
-    const existing: DeduplicationCandidate = {
-      profileId: matchDoc.id,
-      email: matchDoc.email,
-      phone: matchDoc.phoneString,
-      firstName: matchDoc.firstName,
-      lastName: matchDoc.lastName,
-      fullName: matchDoc.firstName ? `${matchDoc.firstName} ${matchDoc.lastName}` : undefined,
-      pan: matchDoc.pan,
-      aadhaarLast4: matchDoc.aadhaarLast4,
-      dob: matchDoc.dob,
-      gstin: matchDoc.gstin,
-      companyName: matchDoc.companyName,
-    };
-    
+  for (const existing of potentialMatches) {
     const { score, breakdown } = calculateMatchScore(candidate, existing, config);
     const action = determineAction(score, config);
-    
+
     if (!bestMatch || score > bestMatch.score) {
-      bestMatch = { candidateId: candidate.profileId, existingProfileId: matchDoc.id, score, breakdown, action, confidence: Math.min(score, 100) };
+      bestMatch = { candidateId: candidate.profileId, existingProfileId: existing.profileId, score, breakdown, action, confidence: Math.min(score, 100) };
     }
   }
   

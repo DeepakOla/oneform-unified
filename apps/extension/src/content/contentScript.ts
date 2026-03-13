@@ -652,7 +652,7 @@ class OneFormAutofill {
     const profile = await chrome.runtime.sendMessage({ action: 'getUserProfile' });
 
     if (!profile || !profile.success) {
-      this.showToast('🔐 पहले indianform.in पर login करें / Please login first', 'error');
+      this.showToast('🔐 पहले indianform.com पर login करें / Please login first', 'error');
       return;
     }
 

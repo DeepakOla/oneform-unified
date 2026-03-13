@@ -45,7 +45,7 @@ class MultiAIProvider {
       },
       skyvern: {
         name: 'Skyvern (Self-hosted)',
-        endpoint: null, // Set from config: https://skyvern.indianform.in
+        endpoint: null, // Set from config: https://skyvern.indianform.com
         model: 'N/A',
         costPerField: 0, // Self-hosted
         priority: 3,
@@ -342,7 +342,7 @@ class MultiAIProvider {
       headers: {
         'Authorization': `Bearer ${provider.apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://indianform.in',
+        'HTTP-Referer': 'https://indianform.com',
         'X-Title': 'OneForm Extension'
       },
       body: JSON.stringify({
