@@ -12,21 +12,28 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: pnpm --filter @oneform/api exec prisma generate
+
+      - name: Build shared packages
+        run: pnpm --filter @oneform/shared-types run build && pnpm --filter @oneform/validation run build
+
       - name: Build Web App
         run: pnpm --filter @oneform/web run build
+        env:
+          VITE_API_URL: https://api.indianform.com
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
