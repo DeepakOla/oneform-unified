@@ -33,7 +33,7 @@ jobs:
       - name: Build Web App
         run: pnpm --filter @oneform/web run build
         env:
-          VITE_API_URL: https://api.indianform.com
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://api.indianform.com' }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

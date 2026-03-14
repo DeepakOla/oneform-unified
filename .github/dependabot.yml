@@ -20,6 +20,17 @@ updates:
       # Turbo major versions need manual review
       - dependency-name: "turbo"
         update-types: ["version-update:semver-major"]
+      # Prisma v7 has breaking changes (datasource.url removed from schema)
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/*"
+        update-types: ["version-update:semver-major"]
+      # jose v6 has breaking API changes
+      - dependency-name: "jose"
+        update-types: ["version-update:semver-major"]
+      # @types/node major bumps can break TS compilation
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -28,3 +39,9 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    ignore:
+      # actions/checkout@v4 is the latest — v5/v6 don't exist
+      - dependency-name: "actions/checkout"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "actions/setup-node"
+        update-types: ["version-update:semver-major"]
