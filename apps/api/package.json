@@ -2,7 +2,7 @@
   "name": "@oneform/api",
   "version": "1.0.0",
   "private": true,
-  "description": "OneForm Unified Platform — Express 5 API (Node.js 24 LTS)",
+  "description": "OneForm Unified Platform — Express 5 API (Node.js >=22)",
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
@@ -14,7 +14,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@oneform/shared-types": "workspace:*",
@@ -59,5 +62,8 @@
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vitest": "^3.0.8"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }
