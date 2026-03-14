@@ -11,7 +11,7 @@ AI-powered Indian government form autofill SaaS. Multi-tenant. Three core user t
 - **OPERATOR** (Arthiyas) — village-level agents serving farmers/illiterate users (core paying segment)
 - **BUSINESS** — bulk submissions for employees
 
-**Status as of 2026-03-14:** Stages 1–5 complete (~90%). Auth is real. Profile + Wallet services implemented. CI/Deploy workflows fixed. PostgreSQL 18 running on Hetzner (port 5433). **Prisma migrations run + seeded** (14 tables). GitHub Actions secrets set. R2 bucket created.
+**Status as of 2026-03-15 (v0.0.1):** Auth flow real + working. Profile + Wallet APIs complete. Dashboard pages (Overview, Wallet, Profiles) built with live API integration. i18n (EN/HI) wired. Silent token refresh implemented. CI green. Deploy to CF Pages working. API running on Hetzner via PM2. PostgreSQL + Redis on Hetzner.
 
 ---
 
@@ -109,28 +109,43 @@ packages/validation/    ← Zod schemas shared between apps
 | `apps/api/src/routes/wallet.routes.ts` | COMPLETE | All 4 endpoints live (no 501 stubs) |
 | `apps/api/src/routes/document.routes.ts` | ALL 501 STUBS | Future phase — R2 upload + OCR |
 | `apps/api/src/middleware/auth.middleware.ts` | COMPLETE | JWT verify + injectTenantContext |
-| `apps/web/src/app/App.tsx` | COMPLETE | Nested routing with DashboardShell |
-| `apps/web/src/contexts/AuthContext.tsx` | COMPLETE | |
-| `apps/web/src/lib/api/client.ts` | COMPLETE | |
-| `apps/web/src/components/dashboard/` | COMPLETE | Shell + Sidebar + Header (shell only) |
-| `apps/web/src/components/modules/auth/` | COMPLETE | LoginPage + RegisterPage |
-| `apps/web/src/i18n/` | MISSING | react-i18next bilingual setup |
+| `apps/web/src/app/App.tsx` | COMPLETE | Nested routing with DashboardShell + lazy-loaded pages |
+| `apps/web/src/contexts/AuthContext.tsx` | COMPLETE | localStorage-backed JWT auth (no refresh logic — refresh is in api client) |
+| `apps/web/src/lib/api/client.ts` | COMPLETE | Axios + silent token refresh (401 → refresh → retry) |
+| `apps/web/src/hooks/use-api.ts` | COMPLETE | TanStack Query hooks: useWallet, useTransactions, useProfiles, useProfile, formatPaisa |
+| `apps/web/src/i18n/` | COMPLETE | react-i18next config + EN/HI translations (nav, dashboard, wallet, profiles, auth, common) |
+| `apps/web/src/components/dashboard/` | COMPLETE | Shell + Sidebar (i18n, role-aware) + Header (wallet balance, lang switcher) |
+| `apps/web/src/components/modules/auth/` | COMPLETE | LoginPage + RegisterPage (hardcoded EN — i18n TODO) |
+| `apps/web/src/components/modules/overview/` | COMPLETE | Dashboard overview with 4 metric cards + quick actions + wallet summary |
+| `apps/web/src/components/modules/wallet/` | COMPLETE | Wallet balance, transaction table, TopUpDialog (Razorpay order — payment modal TODO) |
+| `apps/web/src/components/modules/profiles/` | PARTIAL | Profile list with search + completion bars (profile CREATION form is MISSING) |
+| `apps/web/src/components/modules/i18n/` | COMPLETE | LanguageSwitcher component (EN/HI dropdown) |
 
 ---
 
-## What To Do Next (Ordered)
+## What To Do Next (Ordered by Priority)
 
-1. ~~**Prisma migration**~~ — DONE (2026-03-14). 14 tables created + seeded on Hetzner PostgreSQL.
-   - Local dev: still need `docker-compose up -d` + `npx prisma migrate dev --name init` + `npx prisma db seed`
-2. **i18n setup** — react-i18next, English + Hindi translations for all UI pages
-3. **Loading skeletons** — DashboardSkeleton, ProfileListSkeleton (`skeleton.tsx` in shadcn already exists)
-4. **Document routes** — `document.routes.ts`: R2 presigned upload (`@aws-sdk/client-s3`), OCR via BullMQ worker
-5. ~~**GitHub secrets**~~ — DONE: `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` set in GitHub Actions
-6. **Guest login** — `GuestSession` type exists in shared-types; backend not yet implemented
-7. **E2E tests** — Playwright, test register/login/dashboard flows
-8. **Phone OTP** — MSG91 integration
-9. **Admin routes** — all still 501; tenant management, user management
-10. **Scrapling microservice** — Python FastAPI on Hetzner to scrape form field selectors → stored in `FormTemplate.fieldMappings`
+### Phase 1 — MVP Completion (profile creation → form submission)
+1. **Profile creation form** — Multi-step wizard (Section A/B/C/D) with Zod validation. Section A encrypts client-side placeholder → server encrypts with AES-256-GCM. This is the #1 blocker for MVP.
+2. **Razorpay checkout integration** — Load `checkout.razorpay.com/v1/checkout.js`, open payment modal after `useInitiateTopup()`, call `useVerifyTopup()` on success. Currently creates order but never opens modal.
+3. **Error Boundary** — Add React Error Boundary wrapping `<App />` in main.tsx. Currently any runtime error = white screen.
+4. **Auth pages i18n** — LoginPage + RegisterPage still hardcoded English.
+
+### Phase 2 — Document Upload + Admin
+5. **Document routes** — `document.routes.ts`: R2 presigned upload (`@aws-sdk/client-s3`), OCR via BullMQ worker calling Hetzner OCR Ensemble (port 8004)
+6. **Admin routes** — all 4 still 501 stubs; tenant management, user management, audit logs, stats
+7. **Guest login** — `GuestSession` type exists in shared-types; backend not yet implemented
+
+### Phase 3 — Form Filling Engine
+8. **Scrapling microservice** — Python FastAPI on Hetzner (port 8001). Already have Scrapling v0.4.2 on server. Build endpoint: `POST /scrape?url={url}` → returns field selectors
+9. **Extension endpoints** — Wire `getPendingJobs`, `claimJob`, `reportJobResult` to real service logic
+10. **Form template management** — Admin UI to create/edit FormTemplates with scraped field mappings
+
+### Phase 4 — Production Hardening
+11. **E2E tests** — Playwright, test register/login/dashboard/profile/wallet flows
+12. **Phone OTP** — MSG91 integration
+13. **PM2 save on Hetzner** — `pm2 save` to persist process list across reboots
+14. **Rate limiting** — Express rate limiter on auth endpoints
 
 ---
 
@@ -179,17 +194,14 @@ After running `prisma db seed`:
 
 ## Bilingual Implementation Note
 
-When adding UI text, always use i18next keys, not hardcoded strings:
+i18n is now fully set up. All new UI text **MUST** use i18next keys:
 ```tsx
-// CORRECT (after i18n is set up)
-const { t } = useTranslation('dashboard');
-<h2>{t('welcome', { name: user.firstName })}</h2>
-
-// ONLY acceptable until i18n is wired up:
-<h2>Welcome back, {user.firstName}</h2>
+const { t } = useTranslation();
+<h2>{t('dashboard.welcome', { name: user.firstName })}</h2>
 ```
 
-Hindi namespace: `hi/dashboard.json`. English namespace: `en/dashboard.json`.
+Translation files: `apps/web/src/i18n/locales/en.json` + `hi.json` (flat structure, not namespaced).
+Language switcher: `LanguageSwitcher.tsx` in Header (EN/HI dropdown, persisted to localStorage).
 
 Proper nouns that stay in English regardless of language: Aadhaar, PAN, GSTIN, DigiLocker, OneForm.
 
@@ -201,25 +213,25 @@ The `FormTemplate` DB model has a `skyvern_script` field. Skyvern (`github.com/S
 
 ---
 
-## Infrastructure (2026-03-14)
+## Infrastructure (2026-03-15)
 
 **Hetzner server (135.181.112.160)** runs both Hazelon Power and OneForm. **NO Coolify** — uses plain Docker + Portainer.
 
-| Component | Where | Port | Notes |
+| Component | Where | Port | Status |
 |---|---|---|---|
-| API (Express) | Hetzner | 4000 | Not yet deployed — needs container setup |
-| PostgreSQL 18 | Hetzner | 5433 | Container `oneform-postgres` running, DB `oneform`, **14 tables migrated + seeded** |
-| Redis 8 | Hetzner | 6380 | NOT yet created |
-| Frontend (React) | Cloudflare Pages | — | `oneform-unified-web` project, auto-deploys from GitHub |
-| R2 file storage | Cloudflare R2 | — | Bucket `oneform-documents` created |
-| Scrapling microservice | Hetzner | 8001 | NOT yet built (Phase 4) |
+| API (Express) | Hetzner | 4000 | **RUNNING** via PM2 (`oneform-api`). Accessible at `https://api.indianform.com` |
+| PostgreSQL 17 | Hetzner | 5433 | **RUNNING** on 127.0.0.1. Container `oneform-postgres`. 14 tables migrated + seeded. |
+| Redis 8 | Hetzner | 6380 | **RUNNING** on 127.0.0.1. Container `oneform-redis`. |
+| Frontend (React) | Cloudflare Pages | — | **DEPLOYED** at `oneform-unified-web.pages.dev`. Auto-deploys from GitHub. |
+| R2 file storage | Cloudflare R2 | — | Bucket `oneform-documents` created. Not yet wired to API. |
+| Scrapling | Hetzner | 8001 | NOT yet built (Phase 3). Scrapling v0.4.2 available on server. |
 | Skyvern browser agent | Hetzner | 8085 | **SHARED** with Power project, already running |
 | OCR Ensemble | Hetzner | 8004 | **SHARED** with Power project, already running |
 | Ollama | Hetzner | 11435 | **SHARED** with Power project, already running |
 
-**Cloudflare tunnel** runs via token (no local config.yml). Routes configured in CF Dashboard → Zero Trust → Tunnels.
+**Cloudflare tunnel** runs via token (no local config.yml). Routes: `api.indianform.com → localhost:4000`
 
-**Domain:** indianform.com (DNS on Cloudflare). DNS needs update: remove old A records, add CNAME for Pages + API tunnel.
+**Domain:** indianform.com (DNS on Cloudflare).
 
 ---
 

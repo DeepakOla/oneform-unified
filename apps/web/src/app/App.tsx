@@ -4,9 +4,7 @@
  * Provider stack (outermost first):
  * 1. BrowserRouter        — React Router v7
  * 2. QueryClientProvider  — TanStack Query v5
- * 3. ThemeProvider        — Dark/light mode (system default)
- * 4. AuthProvider         — JWT auth context
- * 5. ToastProvider        — Radix UI toasts
+ * 3. AuthProvider         — JWT auth context
  */
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -14,10 +12,16 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { lazy, Suspense } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
 
+// i18n side-effect: initialise react-i18next before first render
+import '@/i18n/config';
+
 // Lazy-loaded module pages (reduces initial bundle size)
 const LoginPage = lazy(() => import('@/components/modules/auth/LoginPage.js'));
 const RegisterPage = lazy(() => import('@/components/modules/auth/RegisterPage.js'));
 const DashboardShell = lazy(() => import('@/components/dashboard/DashboardShell.js'));
+const OverviewPage = lazy(() => import('@/components/modules/overview/OverviewPage.js'));
+const WalletPage = lazy(() => import('@/components/modules/wallet/WalletPage.js'));
+const ProfilesPage = lazy(() => import('@/components/modules/profiles/ProfilesPage.js'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,11 +78,11 @@ export function App() {
 
               {/* Protected dashboard — DashboardShell is the layout, children fill Outlet */}
               <Route path="/dashboard" element={<DashboardShell />}>
-                <Route index element={<DashboardPlaceholder title="Overview" />} />
-                <Route path="profiles" element={<DashboardPlaceholder title="Profiles" />} />
+                <Route index element={<OverviewPage />} />
+                <Route path="profiles" element={<ProfilesPage />} />
                 <Route path="queue" element={<DashboardPlaceholder title="Client Queue" />} />
                 <Route path="documents" element={<DashboardPlaceholder title="My Documents" />} />
-                <Route path="wallet" element={<DashboardPlaceholder title="Wallet" />} />
+                <Route path="wallet" element={<WalletPage />} />
                 <Route path="admin" element={<DashboardPlaceholder title="Platform Management" />} />
                 <Route path="settings" element={<DashboardPlaceholder title="Settings" />} />
               </Route>

@@ -24,7 +24,8 @@ export function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(registerSchema as any),
     defaultValues: { firstName: '', lastName: '', email: '', password: '' },
   });
 

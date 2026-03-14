@@ -1,10 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Building2, 
-  CreditCard, 
-  FileText, 
-  LayoutDashboard, 
-  Settings, 
+import { useTranslation } from 'react-i18next';
+import {
+  Building2,
+  CreditCard,
+  FileText,
+  LayoutDashboard,
+  Settings,
   Users,
   Backpack,
   Briefcase
@@ -16,57 +17,57 @@ import { Button } from '@/components/ui/button';
 export function Sidebar() {
   const location = useLocation();
   const { user } = useAuth();
-  
+  const { t } = useTranslation();
+
   // Dashboard navigation routes dynamically load based on role
-  // This helps enforce the fix for Dashboard vs Profile Type confusion
   const getNavItems = () => {
     const role = user?.role || 'CITIZEN';
-    
+
     const navItems = [
       {
-        title: 'Overview',
+        titleKey: 'nav.overview',
         href: '/dashboard',
         icon: LayoutDashboard,
         roles: ['ADMIN', 'CITIZEN', 'BUSINESS', 'OPERATOR'],
       },
       {
-        title: 'Profiles',
+        titleKey: 'nav.profiles',
         href: '/dashboard/profiles',
         icon: Users,
-        roles: ['CITIZEN', 'BUSINESS'], // Only these roles create profiles
+        roles: ['CITIZEN', 'BUSINESS', 'OPERATOR'],
       },
       {
-        title: 'Client Queue',
+        titleKey: 'nav.queue',
         href: '/dashboard/queue',
         icon: Briefcase,
-        roles: ['OPERATOR'], // Operators manage citizen clients natively
+        roles: ['OPERATOR'],
       },
       {
-        title: 'My Documents',
+        titleKey: 'nav.documents',
         href: '/dashboard/documents',
         icon: FileText,
         roles: ['CITIZEN', 'BUSINESS', 'OPERATOR'],
       },
       {
-        title: 'Wallet',
+        titleKey: 'nav.wallet',
         href: '/dashboard/wallet',
         icon: CreditCard,
         roles: ['ADMIN', 'CITIZEN', 'BUSINESS', 'OPERATOR'],
       },
       {
-        title: 'Platform Manage',
+        titleKey: 'nav.admin',
         href: '/dashboard/admin',
         icon: Building2,
         roles: ['ADMIN'],
       },
       {
-        title: 'Settings',
+        titleKey: 'nav.settings',
         href: '/dashboard/settings',
         icon: Settings,
         roles: ['ADMIN', 'CITIZEN', 'BUSINESS', 'OPERATOR'],
       },
     ];
-    
+
     return navItems.filter((item) => item.roles.includes(role));
   };
 
@@ -84,15 +85,15 @@ export function Sidebar() {
       <div className="flex-1 overflow-auto py-2">
         <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
           <div className="mb-2 px-2 py-1 text-xs font-semibold tracking-tight text-muted-foreground uppercase">
-            {user?.role || 'General'} Dashboard
+            {t(`roles.${user?.role || 'CITIZEN'}`)} Dashboard
           </div>
-          
+
           {navItems.map((item, index) => {
             const Icon = item.icon;
             // Match exactly or start with it (except the root dashboard path)
-            const isActive = location.pathname === item.href || 
+            const isActive = location.pathname === item.href ||
                             (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
-            
+
             return (
               <Link
                 key={index}
@@ -103,7 +104,7 @@ export function Sidebar() {
                 )}
               >
                 <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "")} />
-                {item.title}
+                {t(item.titleKey)}
               </Link>
             )
           })}
