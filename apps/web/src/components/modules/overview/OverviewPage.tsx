@@ -117,7 +117,7 @@ export default function OverviewPage() {
             <Button
               variant="outline"
               className="justify-start gap-3 h-12"
-              onClick={() => navigate('/dashboard/profiles')}
+              onClick={() => navigate('/dashboard/profiles/new')}
             >
               <Plus className="h-4 w-4" />
               {t('dashboard.createProfile')}

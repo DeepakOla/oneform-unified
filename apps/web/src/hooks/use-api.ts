@@ -91,12 +91,24 @@ export function useVerifyTopup() {
 
 interface Profile {
   id: string;
+  profileCode: string;
   profileType: string;
+  hasSectionA: boolean;
   sectionB: Record<string, unknown> | null;
   sectionC: Record<string, unknown> | null;
   sectionD: Record<string, unknown> | null;
+  completeness: number;
+  status: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface CreateProfilePayload {
+  profileType: string;
+  sectionA?: Record<string, unknown>;
+  sectionB?: Record<string, unknown>;
+  sectionC?: Record<string, unknown>;
+  sectionD?: Record<string, unknown>;
 }
 
 interface ProfileListResponse {
@@ -129,6 +141,22 @@ export function useProfile(id: string) {
       return res.data.data;
     },
     enabled: !!id,
+  });
+}
+
+export function useCreateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateProfilePayload) => {
+      const res = await api.post<{ success: boolean; data: Profile }>(
+        '/api/profiles',
+        payload,
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+    },
   });
 }
 

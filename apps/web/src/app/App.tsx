@@ -22,6 +22,7 @@ const DashboardShell = lazy(() => import('@/components/dashboard/DashboardShell.
 const OverviewPage = lazy(() => import('@/components/modules/overview/OverviewPage.js'));
 const WalletPage = lazy(() => import('@/components/modules/wallet/WalletPage.js'));
 const ProfilesPage = lazy(() => import('@/components/modules/profiles/ProfilesPage.js'));
+const ProfileWizard = lazy(() => import('@/components/modules/profiles/ProfileWizard.js'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,6 +81,7 @@ export function App() {
               <Route path="/dashboard" element={<DashboardShell />}>
                 <Route index element={<OverviewPage />} />
                 <Route path="profiles" element={<ProfilesPage />} />
+                <Route path="profiles/new" element={<ProfileWizard />} />
                 <Route path="queue" element={<DashboardPlaceholder title="Client Queue" />} />
                 <Route path="documents" element={<DashboardPlaceholder title="My Documents" />} />
                 <Route path="wallet" element={<WalletPage />} />

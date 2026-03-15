@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useProfiles } from '@/hooks/use-api';
 import {
   Users,
@@ -57,6 +58,7 @@ function calculateCompletion(profile: {
 
 export default function ProfilesPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [page] = useState(1);
   const { data, isLoading } = useProfiles(page, 20, search || undefined);
@@ -70,7 +72,7 @@ export default function ProfilesPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t('profiles.title')}</h1>
           <p className="text-muted-foreground">{t('profiles.subtitle')}</p>
         </div>
-        <Button>
+        <Button onClick={() => navigate('/dashboard/profiles/new')}>
           <Plus className="mr-2 h-4 w-4" />
           {t('profiles.createNew')}
         </Button>
@@ -101,7 +103,7 @@ export default function ProfilesPage() {
             <div className="rounded-xl border-2 border-dashed border-muted-foreground/30 p-10 text-center">
               <Users className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
               <p className="text-sm text-muted-foreground">{t('profiles.noProfiles')}</p>
-              <Button variant="outline" className="mt-4">
+              <Button variant="outline" className="mt-4" onClick={() => navigate('/dashboard/profiles/new')}>
                 <Plus className="mr-2 h-4 w-4" />
                 {t('profiles.createNew')}
               </Button>
