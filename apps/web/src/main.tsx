@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './app/App.js';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Toaster } from '@/components/ui/toaster';
 import '@/styles/globals.css';
 
@@ -12,7 +13,9 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
-    <Toaster />
+    <ErrorBoundary>
+      <App />
+      <Toaster />
+    </ErrorBoundary>
   </React.StrictMode>,
 );

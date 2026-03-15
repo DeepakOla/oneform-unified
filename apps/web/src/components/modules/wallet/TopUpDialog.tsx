@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useInitiateTopup } from '@/hooks/use-api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useInitiateTopup, useVerifyTopup } from '@/hooks/use-api';
+import { useToast } from '@/hooks/use-toast';
 import { CreditCard, Loader2, Wallet } from 'lucide-react';
 import {
   Dialog,
@@ -16,6 +18,31 @@ import { Label } from '@/components/ui/label';
 
 const PRESET_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 const MIN_AMOUNT_RUPEES = 10;
+const RAZORPAY_SCRIPT_URL = 'https://checkout.razorpay.com/v1/checkout.js';
+
+/** Load Razorpay checkout script (cached after first load) */
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (document.querySelector(`script[src="${RAZORPAY_SCRIPT_URL}"]`)) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = RAZORPAY_SCRIPT_URL;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
+declare global {
+  interface Window {
+    Razorpay: new (options: Record<string, unknown>) => {
+      open: () => void;
+      on: (event: string, handler: () => void) => void;
+    };
+  }
+}
 
 export function TopUpDialog({
   open,
@@ -25,12 +52,16 @@ export function TopUpDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(500);
   const [customAmount, setCustomAmount] = useState('');
   const topupMutation = useInitiateTopup();
+  const verifyMutation = useVerifyTopup();
 
   const finalAmount = customAmount ? Number(customAmount) : selectedAmount;
   const isValid = finalAmount !== null && finalAmount >= MIN_AMOUNT_RUPEES;
+  const isProcessing = topupMutation.isPending || verifyMutation.isPending;
 
   const handlePresetClick = (amount: number) => {
     setSelectedAmount(amount);
@@ -42,17 +73,66 @@ export function TopUpDialog({
     setSelectedAmount(null);
   };
 
-  const handlePay = async () => {
+  const handlePay = useCallback(async () => {
     if (!finalAmount) return;
-    try {
-      await topupMutation.mutateAsync(finalAmount * 100);
-      // TODO: Open Razorpay checkout with result.orderId and result.key
-      // For now, close the dialog — Razorpay integration requires the Razorpay script
-      onOpenChange(false);
-    } catch {
-      // Error is handled by TanStack Query
+
+    // 1. Load Razorpay script
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      toast({ title: 'Failed to load payment gateway', variant: 'destructive' });
+      return;
     }
-  };
+
+    try {
+      // 2. Create Razorpay order via API
+      const result = await topupMutation.mutateAsync(finalAmount * 100);
+
+      // 3. Open Razorpay checkout modal
+      const options: Record<string, unknown> = {
+        key: result.key,
+        amount: result.amountPaisa,
+        currency: result.currency,
+        name: 'OneForm',
+        description: `Wallet Top-up ₹${finalAmount.toLocaleString('en-IN')}`,
+        order_id: result.orderId,
+        prefill: {
+          email: user?.email ?? '',
+          ...(user?.phone ? { contact: user.phone } : {}),
+        },
+        theme: {
+          color: '#6366f1',
+        },
+        handler: async (response: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) => {
+          // 4. Verify payment on backend
+          try {
+            await verifyMutation.mutateAsync({
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+            toast({ title: `₹${finalAmount.toLocaleString('en-IN')} added to wallet!` });
+            onOpenChange(false);
+          } catch {
+            toast({ title: 'Payment verification failed', variant: 'destructive' });
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            // User closed the Razorpay modal without paying
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch {
+      // Error handled by TanStack Query (useInitiateTopup)
+    }
+  }, [finalAmount, topupMutation, verifyMutation, user, toast, onOpenChange]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -112,8 +192,8 @@ export function TopUpDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handlePay} disabled={!isValid || topupMutation.isPending}>
-            {topupMutation.isPending ? (
+          <Button onClick={handlePay} disabled={!isValid || isProcessing}>
+            {isProcessing ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <CreditCard className="mr-2 h-4 w-4" />

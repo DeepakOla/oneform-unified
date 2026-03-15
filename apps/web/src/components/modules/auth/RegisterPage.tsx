@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +20,7 @@ const registerSchema = z.object({
 });
 
 export function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -34,15 +36,15 @@ export function RegisterPage() {
     try {
       await api.post('/api/auth/register', values);
       toast({
-        title: 'Account Created!',
-        description: 'Your workspace has been initialized. Please sign in.',
+        title: t('auth.accountCreated'),
+        description: t('auth.accountCreatedDesc'),
       });
       navigate('/login');
     } catch (error: unknown) {
       const msg =
         (error as { response?: { data?: { error?: { message?: string } } } })
-          .response?.data?.error?.message ?? 'An error occurred creating your account.';
-      toast({ variant: 'destructive', title: 'Registration Failed', description: msg });
+          .response?.data?.error?.message ?? t('auth.registrationError');
+      toast({ variant: 'destructive', title: t('auth.registrationFailed'), description: msg });
     } finally {
       setIsLoading(false);
     }
@@ -61,16 +63,16 @@ export function RegisterPage() {
 
       <Card className="w-full max-w-[450px] shadow-lg border-muted/50">
         <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">{t('auth.createAccount')}</CardTitle>
           <CardDescription>
-            Start using AI autofill for 500+ Indian government portals.
+            {t('auth.createAccountDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="firstName">{t('auth.firstName')}</Label>
                 <Input
                   id="firstName"
                   placeholder="Rahul"
@@ -82,7 +84,7 @@ export function RegisterPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="lastName">{t('auth.lastName')}</Label>
                 <Input
                   id="lastName"
                   placeholder="Kumar"
@@ -93,7 +95,7 @@ export function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -105,12 +107,12 @@ export function RegisterPage() {
                 <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
               )}
             </div>
-            
+
             <div className="space-y-2 pt-2">
-              <Label htmlFor="password">Create Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
+              <Label htmlFor="password">{t('auth.createPassword')}</Label>
+              <Input
+                id="password"
+                type="password"
                 placeholder="••••••••"
                 {...form.register('password')}
                 disabled={isLoading}
@@ -119,20 +121,20 @@ export function RegisterPage() {
                 <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
               )}
             </div>
-            
+
             <Button type="submit" className="w-full mt-2" disabled={isLoading}>
               {isLoading ? (
-                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...</>
+                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('auth.creatingAccount')}</>
               ) : (
-                "Register & Create Workspace"
+                t('auth.registerButton')
               )}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center border-t pt-6 text-sm text-muted-foreground">
-          Already have an account?{" "}
+          {t('auth.alreadyHaveAccount')}{" "}
           <Link to="/login" className="font-semibold text-primary ml-1 hover:underline">
-            Sign in
+            {t('auth.signInLink')}
           </Link>
         </CardFooter>
       </Card>
