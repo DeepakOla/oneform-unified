@@ -103,6 +103,63 @@
     "viewProfile": "View Profile",
     "editProfile": "Edit Profile"
   },
+  "landing": {
+    "nav": {
+      "signIn": "Sign In",
+      "register": "Register Free"
+    },
+    "hero": {
+      "badge": "AI-Powered Form Autofill",
+      "title": "Fill Any Government Form in Minutes",
+      "subtitle": "AI-powered autofill for PMAY, Scholarships, PM-KISAN and 500+ Indian government portals. Secure, bilingual, built for every Indian.",
+      "ctaRegister": "Get Started Free",
+      "ctaSignIn": "Sign In"
+    },
+    "stats": {
+      "portals": "500+",
+      "portalsLabel": "Government Portals",
+      "cost": "₹2",
+      "costLabel": "Per Form",
+      "lang": "EN + HI",
+      "langLabel": "Bilingual Support"
+    },
+    "features": {
+      "title": "Everything you need to fill government forms",
+      "autofill": {
+        "title": "AI Autofill",
+        "desc": "Fill any government portal form in one click. Works on PMAY, PM-KISAN, Scholarships and more."
+      },
+      "secure": {
+        "title": "Encrypted & Safe",
+        "desc": "Aadhaar and PAN encrypted at rest using AES-256-GCM. Only you can decrypt your data."
+      },
+      "operator": {
+        "title": "Operator Mode",
+        "desc": "Arthiyas can serve entire villages, manage multiple profiles, and earn per successful submission."
+      }
+    },
+    "roles": {
+      "title": "Who is OneForm for?",
+      "citizen": {
+        "title": "Citizen",
+        "desc": "Fill government forms for yourself and family members. Store documents securely."
+      },
+      "operator": {
+        "title": "Operator (Arthiya)",
+        "desc": "Serve your village. Manage profiles for farmers, students, and families. Earn ₹2–29 per form filled."
+      },
+      "business": {
+        "title": "Business",
+        "desc": "Bulk submissions for employees. GSTIN, MSME registration, and more in one place."
+      }
+    },
+    "footer": {
+      "tagline": "AI-powered government form autofill",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "copyright": "© 2026 indianform.com"
+    }
+  },
   "auth": {
     "login": "Login",
     "register": "Register",

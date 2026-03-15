@@ -18,11 +18,14 @@ import '@/i18n/config';
 // Lazy-loaded module pages (reduces initial bundle size)
 const LoginPage = lazy(() => import('@/components/modules/auth/LoginPage.js'));
 const RegisterPage = lazy(() => import('@/components/modules/auth/RegisterPage.js'));
+const LandingPage = lazy(() => import('@/components/modules/landing/LandingPage.js'));
 const DashboardShell = lazy(() => import('@/components/dashboard/DashboardShell.js'));
 const OverviewPage = lazy(() => import('@/components/modules/overview/OverviewPage.js'));
 const WalletPage = lazy(() => import('@/components/modules/wallet/WalletPage.js'));
 const ProfilesPage = lazy(() => import('@/components/modules/profiles/ProfilesPage.js'));
 const ProfileWizard = lazy(() => import('@/components/modules/profiles/ProfileWizard.js'));
+const ProfileDetailPage = lazy(() => import('@/components/modules/profiles/ProfileDetailPage.js'));
+const ProfileEditPage = lazy(() => import('@/components/modules/profiles/ProfileEditPage.js'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,7 +76,7 @@ export function App() {
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
               {/* Public routes */}
-              <Route path="/" element={<div className="flex h-screen items-center justify-center"><h1 className="text-2xl font-bold text-gradient">OneForm — Coming Soon</h1></div>} />
+              <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
 
@@ -82,6 +85,8 @@ export function App() {
                 <Route index element={<OverviewPage />} />
                 <Route path="profiles" element={<ProfilesPage />} />
                 <Route path="profiles/new" element={<ProfileWizard />} />
+                <Route path="profiles/:id" element={<ProfileDetailPage />} />
+                <Route path="profiles/:id/edit" element={<ProfileEditPage />} />
                 <Route path="queue" element={<DashboardPlaceholder title="Client Queue" />} />
                 <Route path="documents" element={<DashboardPlaceholder title="My Documents" />} />
                 <Route path="wallet" element={<WalletPage />} />

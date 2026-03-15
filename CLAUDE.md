@@ -11,7 +11,7 @@ AI-powered Indian government form autofill SaaS. Multi-tenant. Three core user t
 - **OPERATOR** (Arthiyas) — village-level agents serving farmers/illiterate users (core paying segment)
 - **BUSINESS** — bulk submissions for employees
 
-**Status as of 2026-03-15 (v0.0.1):** Auth flow real + working. Profile + Wallet APIs complete. Dashboard pages (Overview, Wallet, Profiles) built with live API integration. i18n (EN/HI) wired. Silent token refresh implemented. CI green. Deploy to CF Pages working. API running on Hetzner via PM2. PostgreSQL + Redis on Hetzner.
+**Status as of 2026-03-15 (v0.0.2):** All 4 MVP blockers resolved. Landing page at `/` with hero, features, user roles, i18n. Profile wizard complete. Razorpay checkout wired. Error boundary added. Auth pages i18n done. View Profile + Edit Profile pages built. Primary brand color fixed to OneForm blue. Design tokens centralized at `apps/web/src/styles/tokens.ts`. CF Pages deploys via GitHub Actions only (disable native git integration in CF dashboard).
 
 ---
 
@@ -222,7 +222,7 @@ The `FormTemplate` DB model has a `skyvern_script` field. Skyvern (`github.com/S
 | API (Express) | Hetzner | 4000 | **RUNNING** via PM2 (`oneform-api`). Accessible at `https://api.indianform.com` |
 | PostgreSQL 17 | Hetzner | 5433 | **RUNNING** on 127.0.0.1. Container `oneform-postgres`. 14 tables migrated + seeded. |
 | Redis 8 | Hetzner | 6380 | **RUNNING** on 127.0.0.1. Container `oneform-redis`. |
-| Frontend (React) | Cloudflare Pages | — | **DEPLOYED** at `oneform-unified-web.pages.dev`. Auto-deploys from GitHub. |
+| Frontend (React) | Cloudflare Pages | — | **DEPLOYED** at `indianform.com`. Deploy via GitHub Actions `deploy.yml` only. **Disable native git integration** in CF Pages dashboard (Settings → Builds & deployments) to stop duplicate deploys. |
 | R2 file storage | Cloudflare R2 | — | Bucket `oneform-documents` created. Not yet wired to API. |
 | Scrapling | Hetzner | 8001 | NOT yet built (Phase 3). Scrapling v0.4.2 available on server. |
 | Skyvern browser agent | Hetzner | 8085 | **SHARED** with Power project, already running |

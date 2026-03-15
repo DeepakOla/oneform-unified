@@ -154,10 +154,20 @@ export default function ProfilesPage() {
                           })}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={t('profiles.viewProfile')}
+                            onClick={() => navigate(`/dashboard/profiles/${profile.id}`)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={t('profiles.editProfile')}
+                            onClick={() => navigate(`/dashboard/profiles/${profile.id}/edit`)}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </TableCell>

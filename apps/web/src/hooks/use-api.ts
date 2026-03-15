@@ -160,6 +160,55 @@ export function useCreateProfile() {
   });
 }
 
+export function useUpdateProfile(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Omit<CreateProfilePayload, 'profileType'>) => {
+      const res = await api.put<{ success: boolean; data: Profile }>(
+        `/api/profiles/${id}`,
+        payload,
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles', id] });
+    },
+  });
+}
+
+export function useSectionA(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['profile-section-a', id],
+    queryFn: async () => {
+      const res = await api.get<{ success: boolean; data: Record<string, unknown> }>(
+        `/api/profiles/${id}/section-a`,
+      );
+      return res.data.data;
+    },
+    enabled: !!id && enabled,
+    staleTime: 0,  // never cache — every access writes AuditLog
+    gcTime: 0,     // don't retain in memory
+  });
+}
+
+export function useUpdateSectionA(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Record<string, unknown>) => {
+      const res = await api.put<{ success: boolean; data: Profile }>(
+        `/api/profiles/${id}/section-a`,
+        payload,
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles', id] });
+      queryClient.invalidateQueries({ queryKey: ['profile-section-a', id] });
+    },
+  });
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 const inrFormatter = new Intl.NumberFormat('en-IN', {
