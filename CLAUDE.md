@@ -112,40 +112,40 @@ packages/validation/    ← Zod schemas shared between apps
 | `apps/web/src/app/App.tsx` | COMPLETE | Nested routing with DashboardShell + lazy-loaded pages |
 | `apps/web/src/contexts/AuthContext.tsx` | COMPLETE | localStorage-backed JWT auth (no refresh logic — refresh is in api client) |
 | `apps/web/src/lib/api/client.ts` | COMPLETE | Axios + silent token refresh (401 → refresh → retry) |
-| `apps/web/src/hooks/use-api.ts` | COMPLETE | TanStack Query hooks: useWallet, useTransactions, useProfiles, useProfile, formatPaisa |
-| `apps/web/src/i18n/` | COMPLETE | react-i18next config + EN/HI translations (nav, dashboard, wallet, profiles, auth, common) |
+| `apps/web/src/hooks/use-api.ts` | COMPLETE | TanStack Query hooks: wallet, profiles, useUpdateProfile, useSectionA (audit-logged), useUpdateSectionA |
+| `apps/web/src/i18n/` | COMPLETE | EN/HI translations (nav, dashboard, wallet, profiles, auth, wizard, landing) |
+| `apps/web/src/styles/globals.css` | COMPLETE | Primary = OneForm blue. Geist removed. All CSS vars. |
+| `apps/web/src/styles/tokens.ts` | COMPLETE | Brand color constants for JS use (primary, saffron, indiaGreen, razorpayTheme) |
 | `apps/web/src/components/dashboard/` | COMPLETE | Shell + Sidebar (i18n, role-aware) + Header (wallet balance, lang switcher) |
-| `apps/web/src/components/modules/auth/` | COMPLETE | LoginPage + RegisterPage (hardcoded EN — i18n TODO) |
+| `apps/web/src/components/modules/auth/` | COMPLETE | LoginPage + RegisterPage — full i18n |
+| `apps/web/src/components/modules/landing/` | COMPLETE | LandingPage at `/` — hero, stats, features, user roles (EN/HI) |
 | `apps/web/src/components/modules/overview/` | COMPLETE | Dashboard overview with 4 metric cards + quick actions + wallet summary |
-| `apps/web/src/components/modules/wallet/` | COMPLETE | Wallet balance, transaction table, TopUpDialog (Razorpay order — payment modal TODO) |
-| `apps/web/src/components/modules/profiles/` | PARTIAL | Profile list with search + completion bars (profile CREATION form is MISSING) |
+| `apps/web/src/components/modules/wallet/` | COMPLETE | Wallet balance, transaction table, TopUpDialog (Razorpay fully wired) |
+| `apps/web/src/components/modules/profiles/` | COMPLETE | List + Wizard + Detail (/profiles/:id) + Edit (/profiles/:id/edit) |
 | `apps/web/src/components/modules/i18n/` | COMPLETE | LanguageSwitcher component (EN/HI dropdown) |
 
 ---
 
 ## What To Do Next (Ordered by Priority)
 
-### Phase 1 — MVP Completion (profile creation → form submission)
-1. **Profile creation form** — Multi-step wizard (Section A/B/C/D) with Zod validation. Section A encrypts client-side placeholder → server encrypts with AES-256-GCM. This is the #1 blocker for MVP.
-2. **Razorpay checkout integration** — Load `checkout.razorpay.com/v1/checkout.js`, open payment modal after `useInitiateTopup()`, call `useVerifyTopup()` on success. Currently creates order but never opens modal.
-3. **Error Boundary** — Add React Error Boundary wrapping `<App />` in main.tsx. Currently any runtime error = white screen.
-4. **Auth pages i18n** — LoginPage + RegisterPage still hardcoded English.
+### Phase 1 — COMPLETED ✓
+All MVP blockers resolved: Profile wizard, Razorpay checkout, Error Boundary, Auth i18n, Landing page, View/Edit Profile.
 
-### Phase 2 — Document Upload + Admin
-5. **Document routes** — `document.routes.ts`: R2 presigned upload (`@aws-sdk/client-s3`), OCR via BullMQ worker calling Hetzner OCR Ensemble (port 8004)
-6. **Admin routes** — all 4 still 501 stubs; tenant management, user management, audit logs, stats
-7. **Guest login** — `GuestSession` type exists in shared-types; backend not yet implemented
+### Phase 2 — Document Upload + Admin (CURRENT)
+1. **CF Pages dual deploy fix** — Disable native git integration in CF Pages dashboard (Settings → Builds & deployments → Disconnect). Only `deploy.yml` should run.
+2. **Document routes** — `document.routes.ts`: R2 presigned upload (`@aws-sdk/client-s3`), OCR via BullMQ worker calling Hetzner OCR Ensemble (port 8004)
+3. **Admin routes** — all 4 still 501 stubs; tenant management, user management, audit logs, stats
+4. **Guest login** — `GuestSession` type exists in shared-types; backend not yet implemented
 
 ### Phase 3 — Form Filling Engine
-8. **Scrapling microservice** — Python FastAPI on Hetzner (port 8001). Already have Scrapling v0.4.2 on server. Build endpoint: `POST /scrape?url={url}` → returns field selectors
-9. **Extension endpoints** — Wire `getPendingJobs`, `claimJob`, `reportJobResult` to real service logic
-10. **Form template management** — Admin UI to create/edit FormTemplates with scraped field mappings
+5. **Scrapling microservice** — Python FastAPI on Hetzner (port 8001). Already have Scrapling v0.4.2 on server. Build endpoint: `POST /scrape?url={url}` → returns field selectors
+6. **Extension endpoints** — Wire `getPendingJobs`, `claimJob`, `reportJobResult` to real service logic
+7. **Form template management** — Admin UI to create/edit FormTemplates with scraped field mappings
 
 ### Phase 4 — Production Hardening
-11. **E2E tests** — Playwright, test register/login/dashboard/profile/wallet flows
-12. **Phone OTP** — MSG91 integration
-13. **PM2 save on Hetzner** — `pm2 save` to persist process list across reboots
-14. **Rate limiting** — Express rate limiter on auth endpoints
+8. **E2E tests** — Playwright, test register/login/dashboard/profile/wallet flows
+9. **Phone OTP** — MSG91 integration
+10. **Rate limiting** — Express rate limiter on auth endpoints
 
 ---
 
