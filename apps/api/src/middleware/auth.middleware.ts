@@ -26,6 +26,8 @@ declare global {
         role: UserRole;
         permissions: string[];
       } | undefined;
+      userId?: string;
+      tenantId?: string;
     }
   }
 }
@@ -95,6 +97,8 @@ export async function authenticate(
       role: user.role as UserRole,
       permissions: user.permissions,
     };
+    req.userId = user.id;
+    req.tenantId = user.tenantId;
 
     next();
   } catch (error) {

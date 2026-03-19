@@ -3,26 +3,32 @@
  * BullMQ worker for processing OCR jobs via OCR Ensemble (port 8004)
  */
 import { Queue, Worker, type Job } from 'bullmq';
-import { Redis } from 'ioredis';
 import { logger } from '../utils/logger.js';
-import { updateDocumentStatus, getDocument } from './document.service.js';
+import { updateDocumentStatus } from './document.service.js';
 import axios from 'axios';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Redis Connection
+// Redis Connection for BullMQ
 // ─────────────────────────────────────────────────────────────────────────────
 
 const redisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379';
-const redisConnection = new Redis(redisUrl, {
-  maxRetriesPerRequest: null,
-});
+
+// Parse Redis URL to get connection config
+function getRedisConfig() {
+  const url = new URL(redisUrl);
+  return {
+    host: url.hostname,
+    port: parseInt(url.port || '6379', 10),
+    ...(url.password && { password: url.password }),
+  };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OCR Queue
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const ocrQueue = new Queue('ocr-processing', {
-  connection: redisConnection,
+  connection: getRedisConfig(),
   defaultJobOptions: {
     attempts: 3,
     backoff: {
@@ -138,7 +144,7 @@ export function startOcrWorker(): void {
   }
 
   ocrWorker = new Worker<OcrJobData, OcrJobResult>('ocr-processing', processOcrJob, {
-    connection: redisConnection,
+    connection: getRedisConfig(),
     concurrency: 5, // Process up to 5 OCR jobs concurrently
   });
 

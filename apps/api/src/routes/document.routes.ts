@@ -27,12 +27,10 @@ function getParam(req: Request, name: string): string {
 // POST /api/documents/upload-url - Generate presigned R2 upload URL
 documentRouter.post('/upload-url', async (req: Request, res: Response) => {
   try {
-    const { fileName, mimeType, sizeBytes, type, profileId } = req.body as {
+    const { fileName, mimeType, sizeBytes } = req.body as {
       fileName: string;
       mimeType: string;
       sizeBytes: number;
-      type?: DocumentType;
-      profileId?: string;
     };
 
     if (!fileName || !mimeType || !sizeBytes) {
