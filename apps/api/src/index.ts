@@ -42,10 +42,18 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // 3. Register all routes
+  // 3. Start OCR worker (BullMQ)
+  try {
+    const { startOcrWorker } = await import('./services/ocr.service.js');
+    startOcrWorker();
+  } catch (error) {
+    logger.error({ error }, '⚠️ Failed to start OCR worker (continuing without it)');
+  }
+
+  // 4. Register all routes
   await registerRoutes();
 
-  // 4. Start HTTP server
+  // 5. Start HTTP server
   const server = http.createServer(app);
 
   server.listen(PORT, () => {
@@ -68,6 +76,14 @@ async function main(): Promise<void> {
 
     // Stop accepting new connections
     server.close(async () => {
+      try {
+        const { stopOcrWorker } = await import('./services/ocr.service.js');
+        await stopOcrWorker();
+        logger.info('✅ OCR worker stopped');
+      } catch (err) {
+        logger.error({ err }, 'Error stopping OCR worker');
+      }
+
       try {
         await prisma.$disconnect();
         logger.info('✅ PostgreSQL disconnected');
