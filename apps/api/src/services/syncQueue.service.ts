@@ -80,7 +80,7 @@ export const CRM_RATE_LIMITS: Record<CRMProvider, RateLimitConfig> = {
 // ============================================================
 
 export const syncQueue = new Queue<SyncJobPayload, any, string>('crm_sync_queue', {
-  connection: redisConnection as any,
+  connection: redisConnection,
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: 'exponential', delay: 60000 },
@@ -90,7 +90,7 @@ export const syncQueue = new Queue<SyncJobPayload, any, string>('crm_sync_queue'
 });
 
 export const deadLetterQueue = new Queue<SyncJobPayload, any, string>('crm_sync_dlq', {
-  connection: redisConnection as any,
+  connection: redisConnection,
 });
 
 // ============================================================

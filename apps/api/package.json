@@ -32,7 +32,7 @@
     "express": "^5.0.1",
     "express-validator": "^7.2.1",
     "helmet": "^8.0.0",
-    "ioredis": "^5.6.0",
+    "ioredis": "5.9.3",
     "jose": "^5.10.0",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
