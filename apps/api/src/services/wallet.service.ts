@@ -16,6 +16,7 @@
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { logger } from '../utils/logger.js';
+import type { Prisma } from '@prisma/client';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Errors
@@ -95,7 +96,7 @@ export async function creditWallet(input: {
   const amountBig = BigInt(amountPaisa);
 
   // Atomic: wallet upsert + credit inside a single interactive transaction
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Ensure wallet exists (upsert to handle race on first access)
     let wallet = await tx.wallet.findUnique({ where: { userId } });
     if (!wallet) {
@@ -166,7 +167,7 @@ export async function deductWallet(input: {
 
   // Atomic: balance check + deduct inside a single interactive transaction
   // Prevents TOCTOU race where two concurrent requests both pass the balance check
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // SELECT ... FOR UPDATE — locks the row until transaction completes
     const wallet = await tx.wallet.findUnique({ where: { userId } });
 
@@ -258,7 +259,7 @@ export async function getTransactions(input: {
   ]);
 
   return {
-    transactions: transactions.map((t) => ({
+    transactions: transactions.map((t: typeof transactions[number]) => ({
       id: t.id,
       type: t.type,
       status: t.status,

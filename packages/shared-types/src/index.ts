@@ -55,6 +55,24 @@ export type {
   TopUpRequest, TopUpResponse, DeductRequest,
 } from './wallet.js';
 
+// FormTemplate types
+export type {
+  FormTemplate, FieldMappings, SkyvernScript,
+  CreateFormTemplatePayload, UpdateFormTemplatePayload,
+  ScraplingFieldsResponse,
+} from './form-template.js';
+
+// FormJob types
+export type {
+  FormJobType, FormJobStatus,
+  FormJob, FormJobWithDetails,
+  CreateFormJobPayload, ClaimFormJobPayload,
+  ReportFormJobResultPayload, PendingJobsResponse,
+  AutofillPayload,
+} from './form-job.js';
+
+export { FormJobType as FormJobTypeEnum, FormJobStatus as FormJobStatusEnum } from './form-job.js';
+
 // API Envelope types
 export type {
   ApiSuccess, ApiMeta, ApiErrorDetail, ApiError,
