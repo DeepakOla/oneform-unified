@@ -18,6 +18,7 @@ import { app, registerRoutes } from './app.js';
 import { logger } from './utils/logger.js';
 import { prisma } from './lib/prisma.js';
 import { redis } from './lib/redis.js';
+import { initializeOcrWorker } from './services/ocr.service.js';
 
 const PORT = parseInt(process.env['PORT'] ?? '4000', 10);
 
@@ -42,7 +43,15 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // 3. Register all routes
+  // 3. Initialize OCR worker
+  try {
+    initializeOcrWorker();
+    logger.info('✅ OCR worker initialized');
+  } catch (error) {
+    logger.warn({ error }, '⚠️ OCR worker initialization failed (non-fatal)');
+  }
+
+  // 4. Register all routes
   await registerRoutes();
 
   // 4. Start HTTP server

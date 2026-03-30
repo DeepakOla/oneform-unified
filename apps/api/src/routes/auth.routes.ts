@@ -5,10 +5,13 @@
  * POST /api/auth/refresh
  * POST /api/auth/logout
  * GET  /api/auth/me
+ * POST /api/auth/otp/send
+ * POST /api/auth/otp/verify
  */
 import { Router, type Router as ExpressRouter, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware.js';
+import { rateLimitAuth } from '../middleware/rateLimit.middleware.js';
 import {
   registerUser,
   loginWithEmail,
@@ -16,6 +19,7 @@ import {
   logoutUser,
   AuthError,
 } from '../services/auth.service.js';
+import { sendOTP, verifyOTP } from '../services/otp.service.js';
 import { logger } from '../utils/logger.js';
 
 export const authRouter: ExpressRouter = Router();
@@ -39,6 +43,15 @@ const LoginSchema = z.object({
 
 const RefreshSchema = z.object({
   refreshToken: z.string().min(1),
+});
+
+const SendOTPSchema = z.object({
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian phone number'),
+});
+
+const VerifyOTPSchema = z.object({
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian phone number'),
+  otp: z.string().length(6, 'OTP must be 6 digits'),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -71,7 +84,8 @@ function handleAuthError(res: Response, error: unknown): void {
 // Routes
 // ─────────────────────────────────────────────────────────────────────────────
 
-authRouter.post('/register', async (req: Request, res: Response) => {
+// Apply rate limiting to auth endpoints (5 requests per minute per IP)
+authRouter.post('/register', rateLimitAuth, async (req: Request, res: Response) => {
   try {
     const input = RegisterSchema.parse(req.body);
     const result = await registerUser({
@@ -87,7 +101,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
   }
 });
 
-authRouter.post('/login', async (req: Request, res: Response) => {
+authRouter.post('/login', rateLimitAuth, async (req: Request, res: Response) => {
   try {
     const input = LoginSchema.parse(req.body);
     const ua = req.headers['user-agent'];
@@ -128,4 +142,43 @@ authRouter.post('/logout', authenticate, async (req: Request, res: Response) => 
 
 authRouter.get('/me', authenticate, (req: Request, res: Response) => {
   res.json({ success: true, data: { user: req.user } });
+});
+
+// OTP routes with rate limiting
+authRouter.post('/otp/send', rateLimitAuth, async (req: Request, res: Response) => {
+  try {
+    const { phone } = SendOTPSchema.parse(req.body);
+    const result = await sendOTP(phone);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    handleAuthError(res, error);
+  }
+});
+
+authRouter.post('/otp/verify', rateLimitAuth, async (req: Request, res: Response) => {
+  try {
+    const { phone, otp } = VerifyOTPSchema.parse(req.body);
+    const isValid = await verifyOTP(phone, otp);
+
+    if (!isValid) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_OTP',
+          message: 'Invalid or expired OTP',
+        },
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        verified: true,
+        message: 'OTP verified successfully',
+      },
+    });
+  } catch (error) {
+    handleAuthError(res, error);
+  }
 });

@@ -31,7 +31,7 @@ export type {
   User, SafeUser, UserSummary, UserPreferences,
   OAuthAccount, Session, GuestSession,
   LoginRequest, PhoneOtpRequest, RegisterRequest,
-  AuthTokens, AuthResponse,
+  AuthTokens, AuthResponse, AuthenticatedRequest,
 } from './user.js';
 
 // Tenant & Plan types
