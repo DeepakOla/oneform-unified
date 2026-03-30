@@ -15,6 +15,7 @@ import { createHash } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { logger } from '../utils/logger.js';
 import type { UserRole } from '@oneform/shared-types';
+import type { Prisma } from '@prisma/client';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -118,7 +119,7 @@ export async function registerUser(input: {
     : `${firstName}'s Workspace`;
 
   // Atomic: create Tenant + User + Session in one transaction
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const t = await tx.tenant.create({
       data: {
         name: tenantName,

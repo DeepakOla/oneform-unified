@@ -180,9 +180,11 @@ model Tenant {
   profiles     Profile[]
   documents    Document[]
   FormTemplate FormTemplate[]
+  formJobs     FormJob[]
   auditLogs    AuditLog[]
   crmConnections CRMConnection[]
   syncJobs     SyncJob[]
+  wallets      Wallet[]
 
   @@map("tenants")
 }
@@ -229,6 +231,7 @@ model User {
   documents     Document[]
   wallet        Wallet?
   auditLogs     AuditLog[]
+  formJobs      FormJob[]
 
   @@index([tenantId])
   @@index([email])
@@ -327,6 +330,7 @@ model Profile {
   owner    User   @relation("ProfileOwner", fields: [ownerId], references: [id])
   operator User?  @relation("ProfileOperator", fields: [operatorId], references: [id])
   documents Document[]
+  formJobs FormJob[]
 
   @@index([tenantId])
   @@index([ownerId])
@@ -402,12 +406,85 @@ model FormTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  formJobs FormJob[]
 
   @@index([tenantId])
   @@index([category])
   @@index([portalUrl])
   @@map("form_templates")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FORM JOB (Autofill Job Queue)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model FormJob {
+  id       String @id @default(uuid())
+  tenantId String
+
+  // Relations
+  profileId      String
+  formTemplateId String
+  userId         String // The user who created the job (OPERATOR or CITIZEN)
+
+  // Job metadata
+  jobType        FormJobType
+  status         FormJobStatus @default(PENDING)
+  priority       Int           @default(0) // Higher = more urgent
+
+  // Extension metadata (filled when claimed)
+  extensionId      String? // UUID of the extension instance that claimed this job
+  extensionVersion String? // Extension version at claim time
+  claimedAt        DateTime?
+  claimedBy        String? // userId of the operator whose extension claimed this
+
+  // Results
+  submittedAt       DateTime?
+  submittedUrl      String? // The final URL after submission
+  acknowledgmentId  String? // Gov portal acknowledgment/reference number
+  screenshotUrl     String? // R2 URL of submission screenshot
+  errorMessage      String?
+  retryCount        Int       @default(0)
+  maxRetries        Int       @default(3)
+
+  // Wallet tracking
+  costPaisa         Int // How much this job costs (set at creation)
+  walletDeductedAt  DateTime? // When wallet was charged
+  walletTxId        String? // Reference to WalletTransaction
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  profile      Profile      @relation(fields: [profileId], references: [id])
+  formTemplate FormTemplate @relation(fields: [formTemplateId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([profileId])
+  @@index([formTemplateId])
+  @@index([userId])
+  @@index([status])
+  @@index([jobType])
+  @@index([claimedBy])
+  @@index([createdAt])
+  @@map("form_jobs")
+}
+
+enum FormJobType {
+  MANUAL     // Extension-based autofill (Phase 3)
+  SKYVERN    // Skyvern automation (Phase 4)
+  BULK       // Batch processing (Phase 5)
+}
+
+enum FormJobStatus {
+  PENDING       // Waiting to be claimed by extension
+  CLAIMED       // Extension has claimed but not started
+  IN_PROGRESS   // Extension is actively filling form
+  SUBMITTED     // Successfully submitted to portal
+  FAILED        // Failed after retries
+  CANCELLED     // Manually cancelled
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

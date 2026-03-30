@@ -298,7 +298,7 @@ export async function listProfiles(input: {
   ]);
 
   return {
-    profiles: profiles.map((p) => ({
+    profiles: profiles.map((p: typeof profiles[number]) => ({
       id: p.id,
       profileCode: p.profileCode,
       profileType: p.profileType,
