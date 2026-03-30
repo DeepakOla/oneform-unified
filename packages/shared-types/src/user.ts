@@ -195,3 +195,17 @@ export type UserSummary = Pick<
   User,
   "id" | "displayName" | "firstName" | "lastName" | "avatarUrl" | "role" | "status"
 >;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPRESS REQUEST EXTENSIONS (for API)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Authenticated request with user and tenant context
+ * Added by auth.middleware.ts
+ */
+export interface AuthenticatedRequest {
+  user: SafeUser;
+  userId: string;
+  tenantId: string;
+}
